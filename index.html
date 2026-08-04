@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="UFL Inden Monitor">
+  <title>UFL Inden Monitor</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    *{box-sizing:border-box}
+    body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+    .outer-frame{min-height:100vh;border:10px solid #0f172a}
+    .border{border-width:5px!important}
+    .border-b{border-bottom-width:5px!important}
+    button,input,textarea{border-width:5px!important}
+    .status-large{font-weight:900;font-size:.82rem;line-height:1.1rem;white-space:normal;overflow-wrap:anywhere;border-width:5px!important}
+    .unit-line{width:100%;display:grid;grid-template-columns:1.2fr 1.15fr 1.25fr .85fr .85fr;align-items:center;gap:10px}
+    .unit-line>*{min-width:0}
+    .total-emoji,.ready-emoji,.processing-emoji,.received-emoji{display:inline-flex;align-items:center;justify-content:center;width:2.25rem;height:2.25rem;border-radius:.8rem}
+    .total-emoji{background:#d1d5db;color:#4b5563;box-shadow:inset 0 0 0 5px #9ca3af}
+    .ready-emoji{background:#bbf7d0;color:#166534;box-shadow:inset 0 0 0 5px #86efac}
+    .processing-emoji{background:#fef3c7;color:#92400e;box-shadow:inset 0 0 0 5px #fde68a}
+    .received-emoji{background:#bfdbfe;color:#1d4ed8;box-shadow:inset 0 0 0 5px #93c5fd}
+    .unit-ready{position:relative;border:5px solid #22c55e!important;border-radius:1.5rem!important;transform:translateY(-3px);box-shadow:0 0 0 3px rgba(34,197,94,.2),0 11px 0 #15803d,0 17px 25px rgba(21,128,61,.35),0 0 18px rgba(34,197,94,.8),inset 0 0 18px rgba(34,197,94,.16);animation:greenNeonBreath 2.3s ease-in-out infinite;transition:.25s}
+    .unit-ready:hover{transform:translateY(-7px)}
+    .unit-ready:after{content:"SEDIA";position:absolute;top:-18px;right:20px;padding:3px 10px;border-radius:999px;color:#052e16;background:#bbf7d0;border:5px solid #22c55e;box-shadow:0 0 14px rgba(34,197,94,.9);font-size:.68rem;font-weight:900;letter-spacing:.08em}
+    .notification-flow{border:5px solid rgba(250,204,21,.65)!important;border-left-width:9px!important;transition:.25s}
+    .notification-flow:hover{transform:translateX(3px);box-shadow:0 8px 20px rgba(250,204,21,.16)}
+    .notification-fading{animation:notificationFadeOut .65s ease forwards;pointer-events:none}
+    .flow-arrow{color:#94a3b8;font-weight:900}
+    .tick-symbol,.no-troli{display:inline-block;font-size:1.35em;font-weight:1000}
+    .tick-symbol{color:#16a34a}.no-troli{color:#dc2626}
+    .slide-up{animation:slideUp .3s ease both}
+    @keyframes slideUp{from{transform:translateY(10px);opacity:0}to{transform:translateY(0);opacity:1}}
+    @keyframes notificationFadeOut{from{opacity:1;transform:translateY(0);max-height:300px}to{opacity:0;transform:translateY(-12px);max-height:0;margin:0;padding-top:0;padding-bottom:0;border-width:0}}
+    @keyframes greenNeonBreath{0%,100%{box-shadow:0 0 0 3px rgba(34,197,94,.18),0 11px 0 #15803d,0 16px 23px rgba(21,128,61,.3),0 0 14px rgba(34,197,94,.62),inset 0 0 14px rgba(34,197,94,.13)}50%{box-shadow:0 0 0 5px rgba(34,197,94,.36),0 14px 0 #166534,0 22px 32px rgba(21,128,61,.45),0 0 34px rgba(34,197,94,1),0 0 68px rgba(34,197,94,.5),inset 0 0 24px rgba(34,197,94,.27)}}
+    @media(max-width:1279px){.unit-line{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.unit-header{display:none}.unit-line:not(.unit-header)>:first-child{grid-column:1/-1}}
+    @media(max-width:1023px){.dashboard-grid{display:flex!important;flex-direction:column}.main-column,.side-column{display:contents}.dashboard-card{order:1}.notifications-card{order:2}.units-card{order:3}.settings-card{order:0}.error-card{order:4}}
+    @media(max-width:640px){.unit-line{gap:10px;padding:14px!important}.unit-line:not(.unit-header)>div{overflow-wrap:anywhere}.unit-ready:after{right:14px;font-size:.6rem}}
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-900">
+  <div id="app"></div>
+
+  <script>
+    const DEFAULT_SHEET_URL="https://docs.google.com/spreadsheets/d/1m6D6POkxoEGPr0n8X4N2xv3nC5j0rxvsML02tGkK1to/edit?gid=0#gid=0";
+    const READY="Sedia Diambil",PROCESSING="Sedang Diproses",NEW_RECEIVED="Baru Diterima",HIDDEN="Inden Belum Diterima";
+    const VALID=[READY,PROCESSING,NEW_RECEIVED,HIDDEN];
+    const LEGACY={"Inden Sedia Diambil":READY,"Inden Sedang Diproses":PROCESSING,"Inden Baru Diterima":NEW_RECEIVED};
+    const LIGHT={bg:"#F8F9FA",surface:"#FFFFFF",ink:"#0F172A",ink3:"#64748B",border:"#E2E8F0",accent:"#2563EB",accent2:"#7C3AED",green:"#16A34A",red:"#DC2626",redSoft:"#FEE2E2",amber:"#D97706",gray:"#64748B",headerBar:"#0F172A",inputBg:"#FFFFFF"};
+    const DARK={bg:"#0F172A",surface:"#1E293B",ink:"#F1F5F9",ink3:"#94A3B8",border:"#334155",accent:"#3B82F6",accent2:"#A78BFA",green:"#22C55E",red:"#EF4444",redSoft:"#450A0A",amber:"#F59E0B",gray:"#94A3B8",headerBar:"#020617",inputBg:"#0F172A"};
+    const state={
+      units:{},previous:{},notifications:[],
+      sheetUrl:localStorage.getItem("ufl-sheet-url")||DEFAULT_SHEET_URL,
+      scriptUrl:localStorage.getItem("ufl-script-url")||"",
+      lastUpdated:new Date(),loading:false,error:"",
+      theme:localStorage.getItem("ufl-theme")||"light",
+      settings:false,initialized:false,ms:false,
+      notificationPermission:typeof Notification==="undefined"?"unsupported":Notification.permission
+    };
+    const T={
+      en:{tracker:"Realtime status tracker",settings:"Settings",dashboard:"Dashboard Status Inden",last:"Last updated",refresh:"Refresh",refreshing:"Refreshing...",total:"Total Unit",ready:"Ready",processing:"Processing",received:"New Received",notifications:"Notifications",live:"Live unit status changes are displayed automatically",current:"Current status",changed:"Status changed",units:"Units",unit:"Unit",drip:"Drip",nonmed:"Bukan Ubat",carts:"Total Carts",need:"Need Cart",sheet:"Google Sheet URL",script:"Script URL",save:"Save & Reload",error:"Error",noData:"No data loaded yet.",noChanges:"No active status changes.",noStatus:"No status",inden:"Inden",enableNotifications:"Enable OS notifications",notificationsEnabled:"OS notifications enabled",notificationsBlocked:"Notifications blocked in browser settings"},
+      ms:{tracker:"Pengesan status semasa",settings:"Aturan",dashboard:"Papan Pemuka Status Inden",last:"Terakhir kemaskini",refresh:"Muat Semula",refreshing:"Kemaskini",total:"Jumlah Unit",ready:"Sedia",processing:"Proses",received:"Baru Diterima",notifications:"Pemberitahuan",live:"Perubahan status Unit semasa dipaparkan secara automatik",current:"Status semasa",changed:"Status berubah",units:"Unit",unit:"Unit",drip:"Drip",nonmed:"Bukan Ubat",carts:"Jumlah Troli",need:"Perlu Troli",sheet:"URL Google Sheet",script:"URL Skrip",save:"Simpan & Muatkan",error:"Ralat",noData:"Tiada data dimuatkan lagi.",noChanges:"Tiada perubahan status aktif.",noStatus:"Tiada status",inden:"Inden",enableNotifications:"Aktifkan pemberitahuan OS",notificationsEnabled:"Pemberitahuan OS aktif",notificationsBlocked:"Pemberitahuan disekat dalam tetapan pelayar"}
+    };
+    const t=k=>T[state.ms?"ms":"en"][k];
+    const C=()=>state.theme==="dark"?DARK:LIGHT;
+    const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
+    const normalizeStatus=v=>LEGACY[String(v||"").trim()]||String(v||"").trim();
+    const normalizeTroli=v=>["ya","yes","true","1","✓","✔"].includes(String(v??"").trim().toLowerCase())?"✓":"X";
+
+    function normalizeResult(result){
+      Object.values(result||{}).forEach(u=>{
+        u.drip=u.drip||{};u.bukanUbat=u.bukanUbat||{};
+        u.drip.status=normalizeStatus(u.drip.status);
+        u.bukanUbat.status=normalizeStatus(u.bukanUbat.status);
+        u.perluTroli=normalizeTroli(u.perluTroli);
+      });
+      return result||{};
+    }
+    function statusColor(s){
+      const c=C();
+      return s===READY?c.green:s===PROCESSING?c.amber:s===NEW_RECEIVED?c.accent:c.gray;
+    }
+    function statusLabel(s){
+      if(!state.ms)return s;
+      return s===READY?"Sedia Diambil":s===PROCESSING?"Sedang Diproses":s===NEW_RECEIVED?"Baru Diterima":"Inden Belum Diterima";
+    }
+    function badge(s){
+      s=normalizeStatus(s);if(!s)return "";
+      const ready=s===READY;
+      return `<span class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl status-large ${ready?"text-green-950":"text-white"}" style="background:${ready?"#bbf7d0":statusColor(s)};border-color:${ready?"#86efac":statusColor(s)}">${ready?"✅ ":""}${esc(statusLabel(s))}</span>`;
+    }
+    function parseCSV(text){
+      let rows=[],row=[],cell="",quoted=false;
+      for(let i=0;i<text.length;i++){
+        const ch=text[i];
+        if(quoted){if(ch==='"'&&text[i+1]==='"'){cell+='"';i++}else if(ch==='"')quoted=false;else cell+=ch}
+        else if(ch==='"')quoted=true;
+        else if(ch===","){row.push(cell.trim());cell=""}
+        else if(ch==="\n"){row.push(cell.trim());rows.push(row);row=[];cell=""}
+        else if(ch!=="\r")cell+=ch;
+      }
+      if(cell||row.length){row.push(cell.trim());rows.push(row)}
+      return rows;
+    }
+    function sheetCsv(url){
+      const m=String(url||"").match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+      if(!m)return "";
+      try{
+        const p=new URL(url),gid=p.searchParams.get("gid")||"0";
+        return `https://docs.google.com/spreadsheets/d/${m[1]}/export?format=csv&gid=${encodeURIComponent(gid)}`;
+      }catch{return `https://docs.google.com/spreadsheets/d/${m[1]}/export?format=csv&gid=0`}
+    }
+    function osNotify(unit,category,oldStatus,newStatus){
+      if(typeof Notification==="undefined"||Notification.permission!=="granted")return;
+      const title=`UFL Inden: ${unit}`;
+      const body=`${category==="drip"?"Drip":"Bukan Ubat"}: ${statusLabel(oldStatus)} → ${statusLabel(newStatus)}`;
+      try{new Notification(title,{body,tag:`ufl-${unit}-${category}`})}catch(e){}
+    }
+
+    function removeNotification(key){
+      state.notifications=state.notifications.filter(n=>n.key!==key);
+      render();
+    }
+
+    function scheduleNotificationFade(key){
+      setTimeout(()=>{
+        const notification=state.notifications.find(n=>n.key===key);
+        if(!notification)return;
+        notification.fading=true;
+        render();
+        setTimeout(()=>{
+          state.notifications=state.notifications.filter(n=>n.key!==key);
+          render();
+        },700);
+      },6500);
+    }
+
+    function addNotification(unit,category,oldStatus,newStatus,initial=false){
+      const key=`${unit}-${category}`;
+
+      /*
+        "Inden Belum Diterima" is a hidden state. It must never remain
+        in the live notification list, so any existing notification for
+        this unit/category is removed immediately.
+      */
+      if(normalizeStatus(newStatus)===HIDDEN){
+        state.notifications=state.notifications.filter(n=>n.key!==key);
+        return;
+      }
+
+      state.notifications=state.notifications.filter(n=>n.key!==key);
+      state.notifications.unshift({
+        key,unit,category,old:oldStatus||"—",now:newStatus,
+        initial,time:new Date().toLocaleTimeString(),timestamp:Date.now(),
+        fading:false
+      });
+      state.notifications=state.notifications.slice(0,30);
+
+      if(!initial){
+        osNotify(unit,category,oldStatus,newStatus);
+        scheduleNotificationFade(key);
+      }
+    }
+
+    async function enableNotifications(){
+      if(typeof Notification==="undefined"){alert("This browser does not support OS notifications.");return}
+      try{state.notificationPermission=await Notification.requestPermission();render()}catch(e){}
+    }
+
+    async function fetchData(){
+      if(state.loading)return;
+      state.loading=true;state.error="";render();
+
+      try{
+        let result=null;
+
+        if(state.scriptUrl.trim()){
+          try{
+            const response=await fetch(state.scriptUrl.trim());
+            if(response.ok){
+              const payload=await response.json();
+              result=payload.data||payload;
+            }
+          }catch(e){}
+        }
+
+        if(!result){
+          const csvUrl=sheetCsv(state.sheetUrl);
+          if(!csvUrl)throw Error("URL Google Sheet tidak sah.");
+          const response=await fetch(csvUrl);
+          if(!response.ok)throw Error("Gagal membaca Google Sheet. Pastikan sheet boleh diakses secara umum.");
+
+          result={};
+          parseCSV(await response.text()).forEach(row=>{
+            const unit=(row[0]||"").trim();
+            const drip=normalizeStatus(row[1]);
+            const nonmed=normalizeStatus(row[2]);
+
+            if(unit&&unit.toLowerCase()!=="unit"&&(VALID.includes(drip)||VALID.includes(nonmed))){
+              result[unit]={
+                drip:{status:drip},
+                bukanUbat:{status:nonmed},
+                jumlahTroli:parseInt(row[3],10)||0,
+                perluTroli:normalizeTroli(row[4])
+              };
+            }
+          });
+        }
+
+        normalizeResult(result);
+        const current={};
+
+        Object.entries(result).forEach(([unit,data])=>{
+          ["drip","bukanUbat"].forEach(category=>{
+            const now=data[category]?.status||HIDDEN;
+            const key=`${unit}-${category}`;
+            const old=state.previous[key];
+            current[key]=now;
+
+            if(old!==undefined&&old!==now){
+              addNotification(unit,category,old,now);
+            }else if(!state.initialized&&old===undefined&&now!==HIDDEN){
+              addNotification(unit,category,"",now,true);
+            }
+          });
+        });
+
+        state.previous=current;
+        state.units=Object.fromEntries(
+          Object.entries(result).filter(([,unit])=>
+            !(unit.drip?.status===HIDDEN&&unit.bukanUbat?.status===HIDDEN)
+          )
+        );
+        state.initialized=true;
+        state.lastUpdated=new Date();
+      }catch(error){
+        state.error=error.message||"Ralat berlaku semasa memuatkan data.";
+      }
+
+      state.loading=false;
+      render();
+    }
+
+    function toggleTheme(){
+      state.theme=state.theme==="light"?"dark":"light";
+      localStorage.setItem("ufl-theme",state.theme);
+      render();
+    }
+    function toggleMs(){state.ms=!state.ms;document.documentElement.lang=state.ms?"ms":"en";render()}
+    function toggleSettings(){state.settings=!state.settings;render()}
+    function saveSettings(){
+      state.sheetUrl=document.getElementById("sheetUrl")?.value.trim()||DEFAULT_SHEET_URL;
+      state.scriptUrl=document.getElementById("scriptUrl")?.value.trim()||"";
+      localStorage.setItem("ufl-sheet-url",state.sheetUrl);
+      localStorage.setItem("ufl-script-url",state.scriptUrl);
+      state.settings=false;
+      fetchData();
+    }
+    function troli(value){
+      return normalizeTroli(value)==="✓"
+        ?`<span class="tick-symbol">✓</span>`
+        :`<span class="no-troli">X</span>`;
+    }
+
+    function renderNotifications(c){
+      const notifications=[...state.notifications]
+        .sort((a,b)=>b.timestamp-a.timestamp)
+        .slice(0,8);
+
+      return `
+        <section class="notifications-card rounded-3xl p-6 border shadow-sm slide-up"
+          style="background:${c.surface};border-color:#facc15;box-shadow:0 0 18px rgba(250,204,21,.5)">
+          <div class="flex justify-between items-center mb-2">
+            <h3 class="font-bold text-lg">🟡 ${t("notifications")}</h3>
+            <span class="text-xs font-bold px-2 py-1 rounded-full bg-yellow-300 text-yellow-950">${state.notifications.length}</span>
+          </div>
+          <p class="text-xs mb-4" style="color:${c.ink3}">${t("live")}</p>
+          <div class="rounded-2xl p-3 mb-4 border text-xs font-bold leading-6"
+            style="background:${c.bg};border-color:rgba(250,204,21,.55)">
+            ${statusLabel(HIDDEN)}
+            <span class="flow-arrow">→</span>
+            ${statusLabel(NEW_RECEIVED)}
+            <span class="flow-arrow">→</span>
+            ${statusLabel(PROCESSING)}
+            <span class="flow-arrow">→</span>
+            ${statusLabel(READY)}
+          </div>
+          ${
+            notifications.map(n=>`
+              <div class="notification-flow rounded-2xl p-4 mb-3 slide-up ${n.fading?"notification-fading":""}"
+                style="background:${c.bg}">
+                <div class="flex justify-between gap-3">
+                  <div>
+                    <b>${esc(n.unit)}</b>
+                    <div class="text-xs mt-1 font-semibold" style="color:${c.ink3}">
+                      ${n.category==="drip"?"💧 Drip":"💉 "+t("nonmed")}
+                    </div>
+                  </div>
+                  <small style="color:${c.ink3}">${esc(n.time)}</small>
+                </div>
+                <div class="text-sm mt-3">
+                  ${
+                    n.initial
+                    ? `<span style="color:${c.ink3}">${t("current")}:</span><div class="mt-2">${badge(n.now)}</div>`
+                    : `<div class="text-xs font-semibold mb-2" style="color:${c.ink3}">${t("changed")}</div>
+                       <div class="flex flex-wrap items-center gap-1">${badge(n.old)} <span class="flow-arrow">→</span> ${badge(n.now)}</div>`
+                  }
+                </div>
+              </div>
+            `).join("")
+            ||`<div class="text-sm" style="color:${c.ink3}">${t("noChanges")}</div>`
+          }
+        </section>`;
+    }
+
+    function render(){
+      const c=C();
+      const items=Object.entries(state.units).sort(([a],[b])=>
+        String(a).localeCompare(String(b),undefined,{numeric:true,sensitivity:"base"})
+      );
+      const total=items.length;
+      const count=status=>items.filter(([,u])=>
+        u.drip?.status===status||u.bukanUbat?.status===status
+      ).length;
+
+      document.body.style.background=c.bg;
+      document.body.style.color=c.ink;
+
+      const notificationControl=
+        state.notificationPermission==="granted"
+        ?`<span class="px-3 py-2 rounded-xl bg-green-500 text-white text-xs font-bold">🔔 ${t("notificationsEnabled")}</span>`
+        :state.notificationPermission==="denied"
+        ?`<span class="px-3 py-2 rounded-xl bg-red-500 text-white text-xs font-bold">🔕 ${t("notificationsBlocked")}</span>`
+        :`<button onclick="enableNotifications()" class="px-3 py-2 rounded-xl bg-yellow-400 text-yellow-950 font-bold hover:opacity-90">🔔 <span class="hidden sm:inline">${t("enableNotifications")}</span></button>`;
+
+      document.getElementById("app").innerHTML=`
+        <div class="outer-frame">
+          <header class="sticky top-0 z-40 border-b" style="background:${c.headerBar};border-color:${c.border}">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-16 py-2 flex items-center justify-between gap-3">
+              <div class="flex items-center gap-3 min-w-0">
+                <div class="w-10 h-10 rounded-2xl flex items-center justify-center text-white font-black"
+                  style="background:linear-gradient(135deg,${c.accent},${c.accent2})">UFL</div>
+                <div>
+                  <b class="text-white block">UFL Inden Monitor</b>
+                  <div class="text-xs text-slate-300">${t("tracker")}</div>
+                </div>
+              </div>
+              <div class="flex gap-2 items-center flex-wrap justify-end">
+                ${notificationControl}
+                <button onclick="toggleMs()" class="px-3 py-2 rounded-xl bg-emerald-500 text-white font-bold">MS</button>
+                <button onclick="toggleTheme()" class="px-3 py-2 rounded-xl font-semibold"
+                  style="background:${c.surface};color:${c.ink}">
+                  ${state.theme==="light"?"🌙":"☀️"}
+                  <span class="hidden sm:inline">${state.theme==="light"?"Dark":"Light"}</span>
+                </button>
+                <button onclick="toggleSettings()" class="px-3 py-2 rounded-xl text-white font-semibold"
+                  style="background:${c.accent}">⚙️ <span class="hidden sm:inline">${t("settings")}</span></button>
+              </div>
+            </div>
+          </header>
+
+          <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div class="dashboard-grid grid lg:grid-cols-12 gap-6">
+              <div class="main-column lg:col-span-8 space-y-6">
+                <section class="dashboard-card rounded-3xl p-6 border shadow-sm"
+                  style="background:${c.surface};border-color:${c.border}">
+                  <div class="flex flex-wrap justify-between items-start gap-4">
+                    <div>
+                      <h1 class="text-2xl font-extrabold">${t("dashboard")}</h1>
+                      <p class="text-sm mt-1" style="color:${c.ink3}">
+                        ${t("last")}: ${state.lastUpdated.toLocaleString()}
+                      </p>
+                    </div>
+                    <button onclick="fetchData()" class="px-4 py-2 rounded-xl text-white font-semibold"
+                      style="background:${c.accent}">↻ ${state.loading?t("refreshing"):t("refresh")}</button>
+                  </div>
+
+                  <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
+                    ${[
+                      [t("total"),total,"📦","total-emoji"],
+                      [t("ready"),count(READY),"✅","ready-emoji"],
+                      [t("processing"),count(PROCESSING),"🕘","processing-emoji"],
+                      [t("received"),count(NEW_RECEIVED),"📦","received-emoji"]
+                    ].map(s=>`
+                      <div class="rounded-2xl p-5 border" style="background:${c.bg};border-color:${c.border}">
+                        <div class="flex justify-between">
+                          <div>
+                            <div class="text-sm" style="color:${c.ink3}">${s[0]}</div>
+                            <div class="text-3xl font-extrabold mt-1">${s[1]}</div>
+                          </div>
+                          <div class="${s[3]}">${s[2]}</div>
+                        </div>
+                      </div>
+                    `).join("")}
+                  </div>
+                </section>
+
+                <section class="units-card rounded-3xl p-6 border shadow-sm"
+                  style="background:${c.surface};border-color:${c.border}">
+                  <div class="flex justify-between items-center mb-5">
+                    <h2 class="text-xl font-bold">${t("units")}</h2>
+                    <span class="text-sm" style="color:${c.ink3}">${total} ${t("units").toLowerCase()}</span>
+                  </div>
+
+                  <div class="unit-line unit-header px-5 py-3 mb-3 text-xs font-bold uppercase tracking-wide"
+                    style="color:${c.ink3}">
+                    <div>${t("unit")}</div><div>${t("drip")}</div><div>${t("nonmed")}</div>
+                    <div>${t("carts")}</div><div>${t("need")}</div>
+                  </div>
+
+                  <div class="space-y-4">
+                    ${
+                      items.length
+                      ?items.map(([unit,data])=>{
+                        const ready=data.drip?.status===READY||data.bukanUbat?.status===READY;
+                        return `
+                          <div class="unit-line rounded-2xl p-4 border ${ready?"unit-ready":""}"
+                            style="background:${c.bg};border-color:${ready?"#22c55e":c.border}">
+                            <div class="flex items-center gap-3">
+                              <div class="w-10 h-10 rounded-xl flex items-center justify-center text-xl"
+                                style="background:${c.accent}">🩺</div>
+                              <div>
+                                <div class="font-bold break-words">${esc(unit)}</div>
+                                <div class="text-xs" style="color:${c.ink3}">${t("unit")} ${t("inden")}</div>
+                              </div>
+                            </div>
+                            <div>
+                              <div class="text-xs font-bold mb-2" style="color:${c.accent}">💧 ${t("drip")}</div>
+                              ${badge(data.drip?.status)||`<span class="text-sm" style="color:${c.ink3}">${t("noStatus")}</span>`}
+                            </div>
+                            <div>
+                              <div class="text-xs font-bold mb-2" style="color:${c.accent2}">💉 ${t("nonmed")}</div>
+                              ${badge(data.bukanUbat?.status)||`<span class="text-sm" style="color:${c.ink3}">${t("noStatus")}</span>`}
+                            </div>
+                            <div>
+                              <div class="text-xs font-bold" style="color:${c.green}">🛒 ${t("carts")}</div>
+                              <div class="font-extrabold text-lg" style="color:${c.green}">${data.jumlahTroli||0}</div>
+                            </div>
+                            <div>
+                              <div class="text-xs font-bold" style="color:#800000">${t("need")}</div>
+                              <div class="font-extrabold text-lg">${troli(data.perluTroli)}</div>
+                            </div>
+                          </div>`;
+                      }).join("")
+                      :`<div class="text-center py-16" style="color:${c.ink3}">${t("noData")}</div>`
+                    }
+                  </div>
+                </section>
+              </div>
+
+              <aside class="side-column lg:col-span-4 space-y-6">
+                ${
+                  state.settings
+                  ?`<section class="settings-card rounded-3xl p-6 border shadow-sm slide-up"
+                      style="background:${c.surface};border-color:${c.border}">
+                      <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold text-lg">${t("settings")}</h3>
+                        <button onclick="toggleSettings()">✕</button>
+                      </div>
+                      <label class="text-sm font-semibold">${t("sheet")}</label>
+                      <textarea id="sheetUrl" rows="4" class="w-full mt-2 rounded-2xl px-4 py-3 border"
+                        style="background:${c.inputBg};color:${c.ink};border-color:${c.border}">${esc(state.sheetUrl)}</textarea>
+                      <label class="text-sm font-semibold block mt-4">${t("script")}</label>
+                      <input id="scriptUrl" value="${esc(state.scriptUrl)}"
+                        class="w-full mt-2 rounded-2xl px-4 py-3 border"
+                        style="background:${c.inputBg};color:${c.ink};border-color:${c.border}">
+                      <button onclick="saveSettings()" class="w-full mt-4 px-4 py-3 rounded-2xl text-white font-semibold"
+                        style="background:${c.green}">${t("save")}</button>
+                    </section>`
+                  :""
+                }
+                ${renderNotifications(c)}
+                ${
+                  state.error
+                  ?`<section class="error-card rounded-3xl p-5 border"
+                    style="background:${c.redSoft};border-color:${c.red}">
+                    <b>${t("error")}</b>
+                    <div class="text-sm mt-1">${esc(state.error)}</div>
+                  </section>`
+                  :""
+                }
+              </aside>
+            </div>
+          </main>
+        </div>`;
+    }
+
+    window.fetchData=fetchData;
+    window.toggleTheme=toggleTheme;
+    window.toggleMs=toggleMs;
+    window.toggleSettings=toggleSettings;
+    window.saveSettings=saveSettings;
+    window.enableNotifications=enableNotifications;
+
+    render();
+    fetchData();
+    setInterval(fetchData,10000);
+  </script>
+</body>
+</html>
