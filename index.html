@@ -7,7 +7,26 @@
 <title>UFL Inden Monitor</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
-*{box-sizing:border-box}body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.outer-frame{min-height:100vh;border:10px solid #0f172a}.border{border-width:5px!important}.border-b{border-bottom-width:5px!important}button,input,textarea{border-width:5px!important}.unit-grid{display:grid;grid-template-columns:1.2fr 1.15fr 1.25fr .85fr .85fr;gap:12px;align-items:center}.status{font-weight:900;font-size:.78rem;line-height:1rem;overflow-wrap:anywhere;border:5px solid}.ready-card{position:relative;border:5px solid #22c55e!important;transform:translateY(-3px);box-shadow:0 0 0 3px #22c55e33,0 11px 0 #15803d,0 17px 25px #15803d59,0 0 18px #22c55ecc;animation:pulseGreen 2.3s ease-in-out infinite;transition:.25s}.ready-card:hover{transform:translateY(-7px)}.ready-card:after{content:"READY";position:absolute;top:-18px;right:20px;padding:3px 10px;border-radius:999px;color:#052e16;background:#bbf7d0;border:5px solid #22c55e;box-shadow:0 0 14px #22c55ecc;font-size:.65rem;font-weight:900}.notification{border:5px solid #facc15!important;border-left-width:9px!important;transition:.25s}.notification:hover{transform:translateX(3px)}.flow{color:#94a3b8;font-weight:900}.tick{color:#16a34a;font-size:1.4em;font-weight:1000}.cross{color:#dc2626;font-size:1.4em;font-weight:1000}.slide{animation:slideUp .3s ease both}@keyframes slideUp{from{transform:translateY(10px);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes pulseGreen{0%,100%{box-shadow:0 0 0 3px #22c55e2e,0 11px 0 #15803d,0 16px 23px #15803d4d,0 0 14px #22c55e9e}50%{box-shadow:0 0 0 5px #22c55e5c,0 14px 0 #166534,0 22px 32px #15803d73,0 0 34px #22c5,0 0 68px #22c55e80}}@media(max-width:1279px){.unit-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.unit-header{display:none}.unit-grid:not(.unit-header)>:first-child{grid-column:1/-1}}@media(max-width:1023px){.dashboard{display:flex!important;flex-direction:column}.main,.side{display:contents}.dashboard-card{order:1}.notifications{order:2}.units{order:3}.settings{order:0}.error{order:4}}@media(max-width:640px){.unit-grid{gap:10px;padding:14px!important}.ready-card:after{right:14px;font-size:.58rem}}
+*{box-sizing:border-box}
+body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+.outer-frame{min-height:100vh;border:10px solid #0f172a}
+button,input,textarea{border-width:5px!important}
+.unit-grid{display:grid;grid-template-columns:1.2fr 1.15fr 1.25fr .85fr .85fr;gap:12px;align-items:center}
+.status{font-weight:900;font-size:.78rem;line-height:1rem;overflow-wrap:anywhere;border:5px solid}
+.ready-card{position:relative;border:5px solid #22c55e!important;transform:translateY(-3px);box-shadow:0 0 0 3px #22c55e33,0 11px 0 #15803d,0 17px 25px #15803d59,0 0 18px #22c55ecc;animation:pulseGreen 2.3s ease-in-out infinite;transition:.25s}
+.ready-card:hover{transform:translateY(-7px)}
+.ready-card:after{content:"READY";position:absolute;top:-18px;right:20px;padding:3px 10px;border-radius:999px;color:#052e16;background:#bbf7d0;border:5px solid #22c55e;box-shadow:0 0 14px #22c55ecc;font-size:.65rem;font-weight:900}
+.notification{border:5px solid #facc15!important;border-left-width:9px!important;transition:.25s}
+.notification:hover{transform:translateX(3px)}
+.flow{color:#94a3b8;font-weight:900}
+.tick{color:#16a34a;font-size:1.4em;font-weight:1000}
+.cross{color:#dc2626;font-size:1.4em;font-weight:1000}
+.slide{animation:slideUp .3s ease both}
+@keyframes slideUp{from{transform:translateY(10px);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes pulseGreen{0%,100%{box-shadow:0 0 0 3px #22c55e2e,0 11px 0 #15803d,0 16px 23px #15803d4d,0 0 14px #22c55e9e}50%{box-shadow:0 0 0 5px #22c55e5c,0 14px 0 #166534,0 22px 32px #15803d73,0 0 34px #22c5,0 0 68px #22c55e80}}
+@media(max-width:1279px){.unit-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.unit-header{display:none}.unit-grid:not(.unit-header)>:first-child{grid-column:1/-1}}
+@media(max-width:1023px){.dashboard{display:flex!important;flex-direction:column}.main,.side{display:contents}.dashboard-card{order:1}.notifications{order:2}.units{order:3}.settings{order:0}.error{order:4}}
+@media(max-width:640px){.unit-grid{gap:10px;padding:14px!important}.ready-card:after{right:14px;font-size:.58rem}}
 </style>
 </head>
 <body class="bg-slate-100 text-slate-900">
@@ -30,7 +49,7 @@ const valid=[READY,PROCESSING,RECEIVED,HIDDEN];
 
 function statusColor(s){const c=colors();return s===READY?c.green:s===PROCESSING?c.amber:s===RECEIVED?c.accent:c.muted}
 function label(s){if(!state.ms)return s;return s===READY?"Sedia Diambil":s===PROCESSING?"Sedang Diproses":s===RECEIVED?"Baru Diterima":"Inden Belum Diterima"}
-function badge(status){status=normalize(status);if(!status)return "";let ready=status===READY;return `<span class="status inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl ${ready?"text-green-950":"text-white"}" style="background:${ready?"#bbf7d0":statusColor(status)};border-color:${ready?"#86efac":statusColor(status)}">${ready?"✅ ":""}${esc(label(status))}</span>`}
+function badge(status){status=normalize(status);if(!status)return "";const ready=status===READY;return `<span class="status inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl ${ready?"text-green-950":"text-white"}" style="background:${ready?"#bbf7d0":statusColor(status)};border-color:${ready?"#86efac":statusColor(status)}">${ready?"✅ ":""}${esc(label(status))}</span>`}
 function normalizeTroli(v){return["ya","yes","true","1","✓","✔"].includes(String(v??"").trim().toLowerCase())?"✓":"X"}
 function parseCSV(text){const rows=[];let row=[],cell="",quoted=false;for(let i=0;i<text.length;i++){let ch=text[i];if(quoted){if(ch==='"'&&text[i+1]==='"'){cell+='"';i++}else if(ch==='"')quoted=false;else cell+=ch}else if(ch==='"')quoted=true;else if(ch===","){row.push(cell.trim());cell=""}else if(ch==="\n"){row.push(cell.trim());rows.push(row);row=[];cell=""}else if(ch!=="\r")cell+=ch}if(cell||row.length){row.push(cell.trim());rows.push(row)}return rows}
 function csvUrl(url){let m=String(url||"").match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);if(!m)return "";try{let p=new URL(url),gid=p.searchParams.get("gid")||"0";return`https://docs.google.com/spreadsheets/d/${m[1]}/export?format=csv&gid=${encodeURIComponent(gid)}`}catch{return""}}
@@ -41,28 +60,40 @@ function playNotificationSound(){
   audioContext=audioContext||new(window.AudioContext||window.webkitAudioContext)();
   if(audioContext.state==="suspended")audioContext.resume();
   const now=audioContext.currentTime;
-  [0,0.14].forEach((delay,i)=>{
-   const oscillator=audioContext.createOscillator(),gain=audioContext.createGain();
-   oscillator.type="sine";oscillator.frequency.setValueAtTime(i?880:660,now+delay);
-   gain.gain.setValueAtTime(.0001,now+delay);
-   gain.gain.exponentialRampToValueAtTime(.18,now+delay+.02);
-   gain.gain.exponentialRampToValueAtTime(.0001,now+delay+.18);
-   oscillator.connect(gain);gain.connect(audioContext.destination);
-   oscillator.start(now+delay);oscillator.stop(now+delay+.2);
+  const notes=[
+   {time:0,freq:523.25,duration:.42},
+   {time:.13,freq:659.25,duration:.42},
+   {time:.26,freq:783.99,duration:.62}
+  ];
+  notes.forEach((note,index)=>{
+   const oscillator=audioContext.createOscillator();
+   const gain=audioContext.createGain();
+   const filter=audioContext.createBiquadFilter();
+   oscillator.type=index===2?"sine":"triangle";
+   oscillator.frequency.setValueAtTime(note.freq,now+note.time);
+   oscillator.frequency.exponentialRampToValueAtTime(note.freq*1.015,now+note.time+note.duration);
+   filter.type="lowpass";
+   filter.frequency.setValueAtTime(2600,now+note.time);
+   gain.gain.setValueAtTime(.0001,now+note.time);
+   gain.gain.exponentialRampToValueAtTime(index===2?.2:.14,now+note.time+.025);
+   gain.gain.exponentialRampToValueAtTime(.0001,now+note.time+note.duration);
+   oscillator.connect(filter);
+   filter.connect(gain);
+   gain.connect(audioContext.destination);
+   oscillator.start(now+note.time);
+   oscillator.stop(now+note.time+note.duration+.03);
   });
  }catch{}
 }
-function toggleSound(){
- state.sound=!state.sound;localStorage.setItem("ufl-sound",state.sound?"on":"off");
- if(state.sound)playNotificationSound();render();
-}
+function toggleSound(){state.sound=!state.sound;localStorage.setItem("ufl-sound",state.sound?"on":"off");if(state.sound)playNotificationSound();render()}
 function notify(unit,category,oldStatus,newStatus){
  playNotificationSound();
  if(state.permission!=="granted")return;
  try{new Notification(`UFL Inden: ${unit}`,{body:`${category==="drip"?"Drip":"Bukan Ubat"}: ${label(oldStatus)} → ${label(newStatus)}`,tag:`ufl-${unit}-${category}`})}catch{}
 }
 function addNotification(unit,category,oldStatus,newStatus,initial=false){
- const key=`${unit}-${category}`;state.notifications=state.notifications.filter(n=>n.key!==key);
+ const key=`${unit}-${category}`;
+ state.notifications=state.notifications.filter(n=>n.key!==key);
  if(normalize(newStatus)===HIDDEN)return;
  state.notifications.unshift({key,unit,category,old:oldStatus||"—",now:newStatus,initial,time:new Date().toLocaleTimeString(),timestamp:Date.now()});
  state.notifications=state.notifications.slice(0,30);
@@ -70,14 +101,33 @@ function addNotification(unit,category,oldStatus,newStatus,initial=false){
 }
 async function enableNotifications(){if(typeof Notification==="undefined"){alert("This browser does not support OS notifications.");return}state.permission=await Notification.requestPermission();render()}
 async function fetchData(){
- if(state.loading)return;state.loading=true;state.error="";render();
+ if(state.loading)return;
+ state.loading=true;state.error="";render();
  try{
   let result=null;
   if(state.scriptUrl.trim())try{let r=await fetch(state.scriptUrl.trim());if(r.ok){let p=await r.json();result=p.data||p}}catch{}
-  if(!result){let url=csvUrl(state.sheetUrl);if(!url)throw Error("URL Google Sheet tidak sah.");let r=await fetch(url);if(!r.ok)throw Error("Gagal membaca Google Sheet. Pastikan sheet boleh diakses secara umum.");result={};parseCSV(await r.text()).forEach(row=>{let unit=(row[0]||"").trim(),drip=normalize(row[1]),nonmed=normalize(row[2]);if(unit&&unit.toLowerCase()!=="unit"&&(valid.includes(drip)||valid.includes(nonmed)))result[unit]={drip:{status:drip},bukanUbat:{status:nonmed},jumlahTroli:parseInt(row[3],10)||0,perluTroli:normalizeTroli(row[4])}})}
+  if(!result){
+   let url=csvUrl(state.sheetUrl);if(!url)throw Error("URL Google Sheet tidak sah.");
+   let r=await fetch(url);if(!r.ok)throw Error("Gagal membaca Google Sheet. Pastikan sheet boleh diakses secara umum.");
+   result={};
+   parseCSV(await r.text()).forEach(row=>{
+    let unit=(row[0]||"").trim(),drip=normalize(row[1]),nonmed=normalize(row[2]);
+    if(unit&&unit.toLowerCase()!=="unit"&&(valid.includes(drip)||valid.includes(nonmed)))result[unit]={drip:{status:drip},bukanUbat:{status:nonmed},jumlahTroli:parseInt(row[3],10)||0,perluTroli:normalizeTroli(row[4])}
+   })
+  }
   let current={};
-  Object.entries(result||{}).forEach(([unit,data])=>{data.drip=data.drip||{};data.bukanUbat=data.bukanUbat||{};data.drip.status=normalize(data.drip.status);data.bukanUbat.status=normalize(data.bukanUbat.status);data.perluTroli=normalizeTroli(data.perluTroli);["drip","bukanUbat"].forEach(category=>{let now=data[category].status||HIDDEN,key=`${unit}-${category}`,old=state.previous[key];current[key]=now;if(old!==undefined&&old!==now)addNotification(unit,category,old,now);else if(!state.initialized&&old===undefined&&now!==HIDDEN)addNotification(unit,category,"",now,true)})});
-  state.previous=current;state.units=Object.fromEntries(Object.entries(result||{}).filter(([,u])=>!(u.drip?.status===HIDDEN&&u.bukanUbat?.status===HIDDEN)));state.initialized=true;state.lastUpdated=new Date()
+  Object.entries(result||{}).forEach(([unit,data])=>{
+   data.drip=data.drip||{};data.bukanUbat=data.bukanUbat||{};
+   data.drip.status=normalize(data.drip.status);data.bukanUbat.status=normalize(data.bukanUbat.status);data.perluTroli=normalizeTroli(data.perluTroli);
+   ["drip","bukanUbat"].forEach(category=>{
+    let now=data[category].status||HIDDEN,key=`${unit}-${category}`,old=state.previous[key];current[key]=now;
+    if(old!==undefined&&old!==now)addNotification(unit,category,old,now);
+    else if(!state.initialized&&old===undefined&&now!==HIDDEN)addNotification(unit,category,"",now,true)
+   })
+  });
+  state.previous=current;
+  state.units=Object.fromEntries(Object.entries(result||{}).filter(([,u])=>!(u.drip?.status===HIDDEN&&u.bukanUbat?.status===HIDDEN)));
+  state.initialized=true;state.lastUpdated=new Date()
  }catch(e){state.error=e.message||"Ralat berlaku semasa memuatkan data."}
  state.loading=false;render()
 }
