@@ -8,19 +8,24 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
 *{box-sizing:border-box}
-body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;transition:background .3s,color .3s}
+body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;transition:.3s}
 .outer-frame{min-height:100vh;border:10px solid #172033}
-button,input,textarea,select{border-width:2px!important;transition:all .2s ease}
-button{white-space:nowrap}
+button,input,textarea,select{border-width:2px!important;transition:.2s}
 button:hover{transform:translateY(-1px);filter:brightness(1.06)}
 input[type=range]{border:0!important;accent-color:#38bdf8}
-.unit-grid{display:grid;grid-template-columns:1.2fr 1.15fr 1.25fr .85fr .85fr;gap:12px;align-items:center}
+.unit-grid{display:grid;grid-template-columns:1.2fr 1.15fr 1.25fr .85fr .85fr;gap:12px;align-items:stretch}
+.unit-data{min-width:0;border:2px solid;border-radius:1rem;padding:12px;background:rgba(255,255,255,.35);display:flex;flex-direction:column;justify-content:center}
+.unit-data:first-child{background:rgba(148,163,184,.08)}
 .status{font-weight:900;font-size:.78rem;line-height:1rem;overflow-wrap:anywhere;border:2px solid}
 .emoji-icon{width:3rem;height:3rem;display:inline-flex;align-items:center;justify-content:center;border-radius:1rem;font-size:1.55rem;flex-shrink:0;border:2px solid}
 .emoji-icon.dark{background:#263752;border-color:#4b6385;box-shadow:0 4px 0 #17233a}
 .ready-card{position:relative;border:3px solid #4ade80!important;transform:translateY(-2px);box-shadow:0 0 0 3px #22c55e25,0 9px 0 #166534,0 15px 24px #22c55e30;animation:pulseGreen 2.5s ease-in-out infinite}
 .ready-card:hover{transform:translateY(-6px)}
 .ready-card:after{content:"✓ READY";position:absolute;top:-14px;right:18px;padding:3px 9px;border-radius:999px;color:#052e16;background:#bbf7d0;border:2px solid #4ade80;font-size:.62rem;font-weight:900}
+.unit-title{position:relative;cursor:pointer}
+.unit-title-name{border-bottom:2px dotted currentColor}
+.unit-full-name{display:none;position:absolute;z-index:20;left:0;top:calc(100% + 9px);min-width:220px;max-width:280px;padding:10px 12px;border-radius:12px;font-size:.78rem;line-height:1.25rem;font-weight:700;box-shadow:0 12px 28px #0004}
+.unit-title:hover .unit-full-name,.unit-title.active .unit-full-name{display:block}
 .stat-icon{width:3.2rem;height:3.2rem;display:flex;align-items:center;justify-content:center;border-radius:1rem;font-size:1.65rem;border:2px solid}
 .stat-total{background:#e5e7eb;border-color:#9ca3af;box-shadow:inset 0 -4px 0 #9ca3af}
 .stat-ready{background:#bbf7d0;border-color:#4ade80;box-shadow:inset 0 -4px 0 #16a34a}
@@ -28,20 +33,33 @@ input[type=range]{border:0!important;accent-color:#38bdf8}
 .stat-received{background:#bfdbfe;border-color:#60a5fa;box-shadow:inset 0 -4px 0 #2563eb}
 .toast-wrap{position:fixed;top:82px;right:24px;z-index:100;display:flex;flex-direction:column;gap:12px;width:min(390px,calc(100vw - 32px));pointer-events:none}
 .toast{pointer-events:auto;position:relative;overflow:hidden;border:2px solid #facc15;border-left-width:6px;box-shadow:0 12px 30px #0003;animation:toastIn .35s ease both}
-.toast:after{content:"";position:absolute;bottom:0;left:0;width:100%;height:4px;background:#facc15;transform-origin:left;animation:timer var(--toast-time) linear forwards}
-.flow{color:#94a3b8;font-weight:900}.tick{color:#4ade80;font-size:1.4em;font-weight:1000}.cross{color:#fb7185;font-size:1.4em;font-weight:1000}
+.flow{color:#94a3b8;font-weight:900}
+.tick{color:#4ade80;font-size:1.4em;font-weight:1000}
+.cross{color:#fb7185;font-size:1.4em;font-weight:1000}
 .slide{animation:slideUp .3s ease both}
-.header-inner,.header-actions,.title-row{flex-wrap:nowrap!important}
 .header-actions{overflow-x:auto;scrollbar-width:none}
 .header-actions::-webkit-scrollbar{display:none}
-.brand-title,.dashboard-title{white-space:nowrap}
 @keyframes slideUp{from{transform:translateY(10px);opacity:0}to{transform:translateY(0);opacity:1}}
 @keyframes pulseGreen{0%,100%{box-shadow:0 0 0 3px #22c55e25,0 9px 0 #166534,0 15px 24px #22c55e30}50%{box-shadow:0 0 0 5px #22c55e45,0 11px 0 #14532d,0 20px 30px #22c55e4d}}
 @keyframes toastIn{from{transform:translateX(35px);opacity:0}to{transform:translateX(0);opacity:1}}
-@keyframes timer{from{transform:scaleX(1)}to{transform:scaleX(0)}}
-@media(max-width:1279px){.unit-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.unit-header{display:none}.unit-grid:not(.unit-header)>:first-child{grid-column:1/-1}}
-@media(max-width:1023px){.dashboard{display:flex!important;flex-direction:column}.settings{order:0}.units{order:1}.stats-card{order:2}.dashboard-card{order:3}.error{order:4}}
-@media(max-width:640px){.outer-frame{border-width:5px}.header-inner{padding-left:10px!important;padding-right:10px!important;gap:8px!important}.brand-title{font-size:.82rem}.brand-subtitle{font-size:.62rem}.brand-logo{width:2.25rem!important;height:2.25rem!important;font-size:.75rem}.header-actions{gap:5px!important;max-width:calc(100vw - 150px)}.header-actions button{padding:.4rem .55rem!important;font-size:.72rem}.dashboard-card,.units,.stats-card{padding:1rem!important}.title-row{gap:8px!important}.dashboard-title{font-size:1rem!important;overflow:hidden;text-overflow:ellipsis}.title-row>button{padding:.45rem .6rem!important;font-size:.72rem}.unit-grid{gap:10px;padding:14px!important}.ready-card:after{right:12px;font-size:.55rem}.toast-wrap{top:70px;right:16px}}
+@media(max-width:1279px){
+.unit-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+.unit-header{display:none}
+.unit-grid:not(.unit-header)>:first-child{grid-column:1/-1}
+}
+@media(max-width:640px){
+.outer-frame{border-width:5px}
+.header-inner{padding-left:10px!important;padding-right:10px!important;gap:8px!important}
+.brand-title{font-size:.82rem}
+.header-actions{gap:5px!important;max-width:calc(100vw - 150px)}
+.header-actions button{padding:.4rem .55rem!important;font-size:.72rem}
+.units,.stats-card,.dashboard-card{padding:1rem!important}
+.dashboard-title{font-size:1rem!important}
+.unit-grid{gap:10px;padding:10px!important}
+.unit-data{padding:10px}
+.ready-card:after{right:12px;font-size:.55rem}
+.toast-wrap{top:70px;right:16px}
+}
 </style>
 </head>
 <body class="bg-slate-100 text-slate-900">
@@ -50,85 +68,132 @@ input[type=range]{border:0!important;accent-color:#38bdf8}
 
 <script>
 const DEFAULT_SHEET_URL="https://docs.google.com/spreadsheets/d/1m6D6POkxoEGPr0n8X4N2xv3nC5j0rxvsML02tGkK1to/edit?gid=0#gid=0";
-const TOAST_DURATION=7000;
 const READY="Sedia Diambil",PROCESSING="Sedang Diproses",RECEIVED="Baru Diterima",HIDDEN="Inden Belum Diterima";
+
+const UNIT_NAMES={
+ICU:"Intensive Care unit",
+W5A:"Wad 5A (LELAKI)",
+W6A:"WAD 6A (PEREMPUAN)",
+W6B:"Wad 6B",
+W7A:"Wad 7A (PEREMPUAN)",
+W7B:"Wad 7B (LELAKI)",
+ADM:"Unit Hasil",
+BOT:"Unit Brakiterapi",
+CSSD:"Unit Bekalan Steril",
+DCO:"Unit Rawatan Harian Onkologi",
+HNU:"Unit Rawatan Kanser Di Rumah",
+IFS:"Unit Kawalan Infeksi",
+GOT:"Dewan Bedah Am",
+PAT:"Unit Patologi",
+PHY:"Unit Fisiologi",
+TCM:"Unit Rawatan Tradisional dan Komplementari",
+IPC:"Unit Farmasi Pesakit Dalam",
+UKA:"Unit Kesihatan Awam",
+RKD:"Unit Rekod Perubatan",
+PPD:"Pusat Pengambilan Darah",
+W8A:"Wad 8A (LELAKI)",
+W8B:"Wad 8B (PEREMPUAN)",
+W9A:"Wad MULTIDISIPLIN 9A",
+W9B:"Wad EKSEKUTIF 9B",
+DIET:"Unit Dietetik & Sajian",
+ED:"Unit Kecemasan",
+MOR:"Unit Mortuari/Forensik",
+MDC:"Klinik Multidisiplin",
+"NM189":"Unit Perubatan Nuklear (Farmasi)",
+NMC:"Klinik Perubatan Nuklear",
+ONC:"Klinik Onkologi",
+"PETCT(F)":"Farmasi PETCT",
+RADIO:"Radiologi",
+RTC:"Klinik Radioterapi",
+RTT:"Unit Rawatan Radioterapi",
+WRR:"Wad Radionuklik",
+OPC:"Unit Farmasi Luar",
+"PETCT(N)":"PETCT (Nursing)"
+};
+
+const TEXT={
+ms:{tracker:"Pengesan status semasa",settings:"Aturan",dashboard:"Papan Pemuka Status Inden",unitInden:"Unit Inden",last:"Terakhir dikemaskini",refresh:"Muat Semula",refreshing:"Mengemaskini...",total:"Jumlah Unit",ready:"Sedia",processing:"Proses",received:"Baru Diterima",units:"Unit",unit:"Unit",drip:"Drip",nonmed:"Bukan Ubat",carts:"Jumlah Troli",need:"Perlu Troli",sheet:"URL Google Sheet",save:"Simpan & Muatkan",error:"Ralat",noData:"Tiada data dimuatkan lagi.",noStatus:"Tiada status",dark:"Gelap",light:"Cerah",soundOn:"Bunyi aktif",soundOff:"Bunyi dimatikan",longName:"Nama penuh unit"},
+en:{tracker:"Current status tracker",settings:"Settings",dashboard:"Indent Status Dashboard",unitInden:"Indent Units",last:"Last updated",refresh:"Refresh",refreshing:"Refreshing...",total:"Total Units",ready:"Ready",processing:"Processing",received:"Newly Received",units:"Units",unit:"Unit",drip:"Drip",nonmed:"Non-Medicine",carts:"Total Carts",need:"Carts Needed",sheet:"Google Sheet URL",save:"Save & Load",error:"Error",noData:"No data loaded yet.",noStatus:"No status",dark:"Dark",light:"Light",soundOn:"Sound on",soundOff:"Sound off",longName:"Full unit name"}
+};
+
 const LIGHT={bg:"#f8fafc",surface:"#fff",ink:"#0f172a",muted:"#64748b",border:"#e2e8f0",accent:"#2563eb",purple:"#7c3aed",green:"#16a34a",red:"#dc2626",redSoft:"#fee2e2",amber:"#d97706",header:"#172033",input:"#fff"};
 const DARK={bg:"#111827",surface:"#1f2937",ink:"#f8fafc",muted:"#cbd5e1",border:"#475569",accent:"#60a5fa",purple:"#c4b5fd",green:"#4ade80",red:"#fb7185",redSoft:"#451a24",amber:"#fbbf24",header:"#0b1220",input:"#172236"};
-const TXT={
-ms:{tracker:"Pengesan status semasa",settings:"Aturan",dashboard:"Papan Pemuka Status Inden",last:"Terakhir dikemaskini",refresh:"Muat Semula",refreshing:"Mengemaskini...",total:"Jumlah Unit",ready:"Sedia",processing:"Proses",received:"Baru Diterima",units:"Unit",unit:"Unit",drip:"Drip",nonmed:"Bukan Ubat",carts:"Jumlah Troli",need:"Perlu Troli",sheet:"URL Google Sheet",script:"URL Skrip",save:"Simpan & Muatkan",error:"Ralat",noData:"Tiada data dimuatkan lagi.",noStatus:"Tiada status",inden:"Inden",enable:"Aktifkan pemberitahuan OS",enabled:"Pemberitahuan OS aktif",blocked:"Pemberitahuan disekat",soundOn:"Bunyi aktif",soundOff:"Bunyi dimatikan",volume:"Tahap bunyi chime",testSound:"Uji chime",chime:"Bunyi chime",classic:"Klasik",bright:"Terang",soft:"Lembut",alert:"Amaran",dark:"Gelap",light:"Cerah"},
-en:{tracker:"Current status tracker",settings:"Settings",dashboard:"Indent Status Dashboard",last:"Last updated",refresh:"Refresh",refreshing:"Refreshing...",total:"Total Units",ready:"Ready",processing:"Processing",received:"Newly Received",units:"Units",unit:"Unit",drip:"Drip",nonmed:"Non-Medicine",carts:"Total Carts",need:"Carts Needed",sheet:"Google Sheet URL",script:"Script URL",save:"Save & Load",error:"Error",noData:"No data loaded yet.",noStatus:"No status",inden:"Indent",enable:"Enable OS notifications",enabled:"OS notifications enabled",blocked:"Notifications are blocked",soundOn:"Sound on",soundOff:"Sound off",volume:"Chime volume",testSound:"Test chime",chime:"Chime",classic:"Classic",bright:"Bright",soft:"Soft",alert:"Alert",dark:"Dark",light:"Light"}
-};
-const CHIMES={classic:[523,659,784],bright:[659,880,1047],soft:[392,494,587],alert:[880,659,880]};
 const LEGACY={"Inden Sedia Diambil":READY,"Inden Sedang Diproses":PROCESSING,"Inden Baru Diterima":RECEIVED};
-const state={units:{},previous:{},toasts:[],sheetUrl:localStorage.getItem("ufl-sheet-url")||DEFAULT_SHEET_URL,scriptUrl:localStorage.getItem("ufl-script-url")||"",theme:localStorage.getItem("ufl-theme")||"light",lang:localStorage.getItem("ufl-lang")||"ms",sound:localStorage.getItem("ufl-sound")!=="off",volume:+localStorage.getItem("ufl-volume")||65,chime:localStorage.getItem("ufl-chime")||"classic",loading:false,error:"",lastUpdated:new Date(),settings:false,initialized:false,permission:typeof Notification==="undefined"?"unsupported":Notification.permission};
-let audioContext=null;
-const t=k=>TXT[state.lang][k]||k;
+const state={units:{},previous:{},toasts:[],activeUnit:null,sheetUrl:localStorage.getItem("ufl-sheet-url")||DEFAULT_SHEET_URL,theme:localStorage.getItem("ufl-theme")||"light",lang:localStorage.getItem("ufl-lang")||"ms",sound:localStorage.getItem("ufl-sound")!=="off",loading:false,error:"",lastUpdated:new Date(),settings:false,initialized:false};
+
+const t=k=>TEXT[state.lang][k]||k;
 const colors=()=>state.theme==="dark"?DARK:LIGHT;
 const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
 const normalize=v=>LEGACY[String(v||"").trim()]||String(v||"").trim();
 const valid=[READY,PROCESSING,RECEIVED,HIDDEN];
-function statusColor(s){let c=colors();return s===READY?c.green:s===PROCESSING?c.amber:s===RECEIVED?c.accent:c.muted}
-function label(s){s=normalize(s);return state.lang==="en"?(s===READY?"Ready":s===PROCESSING?"Processing":s===RECEIVED?"Newly Received":"Not Yet Received"):(s===READY?"Sedia Diambil":s===PROCESSING?"Diproses":s===RECEIVED?"Baru Diterima":"Belum Diterima")}
-function badge(s){s=normalize(s);if(!s)return"";let r=s===READY,c=colors();return`<span class="status inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl" style="color:${r?"#052e16":"#fff"};background:${r?"#bbf7d0":statusColor(s)};border-color:${r?"#86efac":statusColor(s)}">${r?"✅ ":""}${esc(label(s))}</span>`}
-function normalizeTroli(v){return["ya","yes","true","1","✓","✔"].includes(String(v??"").trim().toLowerCase())?"✓":"X"}
-function parseCSV(text){let rows=[],row=[],cell="",q=false;for(let i=0;i<text.length;i++){let x=text[i];if(q){if(x==='"'&&text[i+1]==='"'){cell+='"';i++}else if(x==='"')q=false;else cell+=x}else if(x==='"')q=true;else if(x===","){row.push(cell.trim());cell=""}else if(x==="\n"){row.push(cell.trim());rows.push(row);row=[];cell=""}else if(x!=="\r")cell+=x}if(cell||row.length){row.push(cell.trim());rows.push(row)}return rows}
-function csvUrl(url){let m=String(url).match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);if(!m)return"";try{let p=new URL(url);return`https://docs.google.com/spreadsheets/d/${m[1]}/export?format=csv&gid=${p.searchParams.get("gid")||0}`}catch{return""}}
-function playNotificationSound(){if(!state.sound||!state.volume)return;try{audioContext=audioContext||new(window.AudioContext||window.webkitAudioContext)();let now=audioContext.currentTime;CHIMES[state.chime].forEach((f,i)=>{let o=audioContext.createOscillator(),g=audioContext.createGain(),st=now+i*.13;o.type="triangle";o.frequency.value=f;g.gain.setValueAtTime(.001,st);g.gain.exponentialRampToValueAtTime(.12*state.volume/100,st+.03);g.gain.exponentialRampToValueAtTime(.001,st+.4);o.connect(g);g.connect(audioContext.destination);o.start(st);o.stop(st+.45)})}catch{}}
-function showToast(unit,cat,old,now,initial=false){
- if(now===HIDDEN)return;
- const id=Date.now()+"-"+Math.random(),expiresAt=Date.now()+TOAST_DURATION;
- state.toasts.unshift({id,unit,category:cat,old:old||"—",now,initial,time:new Date().toLocaleTimeString(),expiresAt});
- state.toasts=state.toasts.slice(0,5);
- renderToasts();
- if(!initial){playNotificationSound();if(state.permission==="granted")new Notification("UFL Inden: "+unit,{body:label(now)})}
- setTimeout(()=>{state.toasts=state.toasts.filter(x=>x.id!==id);renderToasts()},TOAST_DURATION);
+const unitName=u=>UNIT_NAMES[u.trim().toUpperCase()]||UNIT_NAMES[u.trim()]||u;
+const label=s=>state.lang==="en"?(s===READY?"Ready":s===PROCESSING?"Processing":s===RECEIVED?"Newly Received":"Not Yet Received"):(s===READY?"Sedia Diambil":s===PROCESSING?"Diproses":s===RECEIVED?"Baru Diterima":"Belum Diterima");
+const statusColor=s=>{let c=colors();return s===READY?c.green:s===PROCESSING?c.amber:s===RECEIVED?c.accent:c.muted};
+const badge=s=>s?`<span class="status inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl" style="color:${s===READY?"#052e16":"#fff"};background:${s===READY?"#bbf7d0":statusColor(s)};border-color:${s===READY?"#86efac":statusColor(s)}">${s===READY?"✅ ":""}${esc(label(s))}</span>`:"";
+const normalizeTroli=v=>["ya","yes","true","1","✓","✔"].includes(String(v??"").trim().toLowerCase())?"✓":"X";
+
+function parseCSV(text){
+ let rows=[],row=[],cell="",quote=false;
+ for(let i=0;i<text.length;i++){let x=text[i];if(quote){if(x==='"'&&text[i+1]==='"'){cell+='"';i++}else if(x==='"')quote=false;else cell+=x}else if(x==='"')quote=true;else if(x===","){row.push(cell.trim());cell=""}else if(x==="\n"){row.push(cell.trim());rows.push(row);row=[];cell=""}else if(x!=="\r")cell+=x}
+ if(cell||row.length){row.push(cell.trim());rows.push(row)}return rows;
 }
+function csvUrl(url){
+ let m=String(url).match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);if(!m)return"";
+ try{let p=new URL(url);return`https://docs.google.com/spreadsheets/d/${m[1]}/export?format=csv&gid=${p.searchParams.get("gid")||0}`}catch{return""}
+}
+function toast(unit,cat,old,now){state.toasts.unshift({id:Date.now()+Math.random(),unit,cat,old,now,time:new Date().toLocaleTimeString()});state.toasts=state.toasts.slice(0,5);renderToasts()}
 function renderToasts(){
- let c=colors(),box=document.getElementById("toastContainer");if(!box)return;
- const now=Date.now();
- state.toasts=state.toasts.filter(n=>n.expiresAt>now);
- box.innerHTML=state.toasts.map(n=>{
-  let remaining=Math.max(1,n.expiresAt-now);
-  return`<div class="toast rounded-2xl p-4 slide" style="--toast-time:${remaining}ms;background:${c.surface};color:${c.ink}">
-   <div class="flex justify-between gap-3"><div><b>🔔 ${esc(n.unit)}</b><div class="text-xs mt-1 font-semibold" style="color:${c.muted}">${n.category==="drip"?"💧 "+t("drip"):"💉 "+t("nonmed")}</div></div>
-   <button onclick="dismissToast('${n.id}')" class="text-lg leading-none">×</button></div>
-   <div class="text-xs mt-3 font-semibold" style="color:${c.muted}">${n.initial?"Status semasa":"Status berubah"}</div>
-   <div class="flex flex-wrap items-center gap-1 mt-2">${n.initial?badge(n.now):badge(n.old)+"<span class='flow'>→</span>"+badge(n.now)}</div>
-   <small class="block mt-2" style="color:${c.muted}">${esc(n.time)}</small>
-  </div>`}).join("");
+ let c=colors(),box=document.getElementById("toastContainer");
+ box.innerHTML=state.toasts.map(n=>`<div class="toast rounded-2xl p-4" style="background:${c.surface};color:${c.ink}"><div class="flex justify-between"><b>🔔 ${esc(n.unit)}</b><button onclick="dismissToast('${n.id}')">×</button></div><div class="text-xs mt-2" style="color:${c.muted}">${n.cat==="drip"?"💧 "+t("drip"):"💉 "+t("nonmed")}</div><div class="flex flex-wrap items-center gap-1 mt-3">${badge(n.old)}<span class="flow">→</span>${badge(n.now)}</div><small style="color:${c.muted}">${n.time}</small></div>`).join("")
 }
-function dismissToast(id){state.toasts=state.toasts.filter(x=>x.id!==id);renderToasts()}
-function toggleSound(){state.sound=!state.sound;localStorage.setItem("ufl-sound",state.sound?"on":"off");if(state.sound)playNotificationSound();render()}
-function setVolume(v,test=false){state.volume=Math.max(0,Math.min(100,+v||0));localStorage.setItem("ufl-volume",state.volume);let o=document.getElementById("volumeValue");if(o)o.textContent=state.volume+"%";if(test)playNotificationSound()}
-function setChime(v,test=false){if(CHIMES[v])state.chime=v;localStorage.setItem("ufl-chime",state.chime);if(test)playNotificationSound()}
-function setLanguage(){state.lang=state.lang==="ms"?"en":"ms";localStorage.setItem("ufl-lang",state.lang);render()}
+function dismissToast(id){state.toasts=state.toasts.filter(x=>String(x.id)!==String(id));renderToasts()}
 function toggleTheme(){state.theme=state.theme==="light"?"dark":"light";localStorage.setItem("ufl-theme",state.theme);render()}
+function setLanguage(){state.lang=state.lang==="ms"?"en":"ms";localStorage.setItem("ufl-lang",state.lang);render()}
+function toggleSound(){state.sound=!state.sound;localStorage.setItem("ufl-sound",state.sound?"on":"off");render()}
 function toggleSettings(){state.settings=!state.settings;render()}
-async function enableNotifications(){if(typeof Notification==="undefined")return alert("Notifications are not supported.");state.permission=await Notification.requestPermission();render()}
-function saveSettings(){state.sheetUrl=document.getElementById("sheetUrl").value.trim();state.scriptUrl=document.getElementById("scriptUrl").value.trim();localStorage.setItem("ufl-sheet-url",state.sheetUrl);localStorage.setItem("ufl-script-url",state.scriptUrl);state.settings=false;fetchData()}
+function toggleUnitInfo(id){state.activeUnit=state.activeUnit===id?null:id;render()}
+function saveSettings(){state.sheetUrl=document.getElementById("sheetUrl").value.trim();localStorage.setItem("ufl-sheet-url",state.sheetUrl);state.settings=false;fetchData()}
+
 async function fetchData(){
- if(state.loading)return;state.loading=true;state.error="";render();
+ if(state.loading)return;
+ state.loading=true;state.error="";render();
  try{
-  let result=null;
-  if(state.scriptUrl)try{let r=await fetch(state.scriptUrl);if(r.ok){let p=await r.json();result=p.data||p}}catch{}
-  if(!result){let r=await fetch(csvUrl(state.sheetUrl));if(!r.ok)throw Error("Gagal membaca Google Sheet.");result={};parseCSV(await r.text()).forEach(a=>{let u=(a[0]||"").trim(),d=normalize(a[1]),n=normalize(a[2]);if(u&&u.toLowerCase()!=="unit"&&(valid.includes(d)||valid.includes(n)))result[u]={drip:{status:d},bukanUbat:{status:n},jumlahTroli:+a[3]||0,perluTroli:normalizeTroli(a[4])}})}
+  let r=await fetch(csvUrl(state.sheetUrl));if(!r.ok)throw Error("Gagal membaca Google Sheet.");
+  let result={};
+  parseCSV(await r.text()).forEach(a=>{
+   let u=(a[0]||"").trim(),d=normalize(a[1]),n=normalize(a[2]);
+   if(u&&u.toLowerCase()!=="unit"&&(valid.includes(d)||valid.includes(n)))result[u]={drip:{status:d},bukanUbat:{status:n},jumlahTroli:+a[3]||0,perluTroli:normalizeTroli(a[4])}
+  });
   let current={};
-  Object.entries(result||{}).forEach(([u,d])=>{d.drip=d.drip||{};d.bukanUbat=d.bukanUbat||{};["drip","bukanUbat"].forEach(cat=>{let now=normalize(d[cat].status)||HIDDEN,key=u+"-"+cat,old=state.previous[key];current[key]=now;if(old!==undefined&&old!==now)showToast(u,cat,old,now);else if(!state.initialized&&now!==HIDDEN)showToast(u,cat,"",now,true);d[cat].status=now});d.perluTroli=normalizeTroli(d.perluTroli)});
-  state.previous=current;state.units=Object.fromEntries(Object.entries(result).filter(([,u])=>!(u.drip.status===HIDDEN&&u.bukanUbat.status===HIDDEN)));state.initialized=true;state.lastUpdated=new Date()
+  Object.entries(result).forEach(([u,d])=>{
+   ["drip","bukanUbat"].forEach(cat=>{let now=normalize(d[cat].status)||HIDDEN,key=u+"-"+cat,old=state.previous[key];if(old!==undefined&&old!==now&&now!==HIDDEN)toast(u,cat,old,now);current[key]=now;d[cat].status=now});
+   d.perluTroli=normalizeTroli(d.perluTroli)
+  });
+  state.previous=current;state.units=Object.fromEntries(Object.entries(result).filter(([,u])=>!(u.drip.status===HIDDEN&&u.bukanUbat.status===HIDDEN)));state.lastUpdated=new Date()
  }catch(e){state.error=e.message||"Ralat berlaku."}
- state.loading=false;render()
+ state.loading=false;state.initialized=true;render()
 }
+
 function render(){
- let c=colors(),items=Object.entries(state.units).sort(([a],[b])=>a.localeCompare(b,undefined,{numeric:true})),total=items.length,count=s=>items.filter(([,u])=>u.drip.status===s||u.bukanUbat.status===s).length;
- document.body.style.background=c.bg;document.body.style.color=c.ink;document.documentElement.lang=state.lang;
- let notice=state.permission==="granted"?`<span class="px-3 py-2 rounded-xl bg-green-500 text-white text-xs font-bold">🔔 ${t("enabled")}</span>`:state.permission==="denied"?`<span class="px-3 py-2 rounded-xl bg-rose-500 text-white text-xs font-bold">🔕 ${t("blocked")}</span>`:`<button onclick="enableNotifications()" class="px-3 py-2 rounded-xl bg-yellow-300 text-yellow-950 font-bold">🔔</button>`;
- let settings=state.settings?`<section class="settings rounded-3xl p-6 border slide" style="background:${c.surface};border-color:${c.border}"><div class="flex justify-between mb-4"><h3 class="font-bold text-lg">⚙️ ${t("settings")}</h3><button onclick="toggleSettings()">✕</button></div><label class="text-sm font-semibold">${t("sheet")}</label><textarea id="sheetUrl" rows="3" class="w-full mt-2 rounded-2xl px-4 py-3" style="background:${c.input};color:${c.ink};border-color:${c.border}">${esc(state.sheetUrl)}</textarea><label class="text-sm font-semibold block mt-4">${t("script")}</label><input id="scriptUrl" value="${esc(state.scriptUrl)}" class="w-full mt-2 rounded-2xl px-4 py-3" style="background:${c.input};color:${c.ink};border-color:${c.border}"><div class="mt-5 p-4 rounded-2xl border" style="background:${c.bg};border-color:${c.border}"><label class="font-bold">🎵 ${t("chime")}</label><select onchange="setChime(this.value)" class="w-full mt-2 rounded-xl px-3 py-2" style="background:${c.input};color:${c.ink};border-color:${c.border}">${Object.keys(CHIMES).map(x=>`<option value="${x}" ${state.chime===x?"selected":""}>${t(x)}</option>`).join("")}</select><div class="flex justify-between mt-4"><b>🔊 ${t("volume")}</b><output id="volumeValue">${state.volume}%</output></div><input type="range" min="0" max="100" value="${state.volume}" oninput="setVolume(this.value)" class="w-full mt-2"><button onclick="setVolume(document.querySelector('input[type=range]').value,true)" class="w-full mt-3 px-3 py-2 rounded-xl font-bold border" style="background:${c.surface};color:${c.ink};border-color:${c.border}">${t("testSound")}</button></div><button onclick="saveSettings()" class="w-full mt-4 px-4 py-3 rounded-2xl text-white font-bold" style="background:${c.green}">${t("save")}</button></section>`:"";
- let unitRows=items.length?items.map(([u,d])=>{let ready=d.drip.status===READY||d.bukanUbat.status===READY;return`<div class="unit-grid rounded-2xl p-4 border ${ready?"ready-card":""}" style="background:${c.bg};border-color:${ready?"#4ade80":c.border}"><div class="flex items-center gap-3"><div class="emoji-icon ${state.theme==="dark"?"dark":""}">🩺</div><div><div class="font-bold break-words">${esc(u)}</div><div class="text-xs" style="color:${c.muted}">${t("unit")} ${t("inden")}</div></div></div><div><div class="text-xs font-bold mb-2" style="color:${c.accent}">💧 ${t("drip")}</div>${badge(d.drip.status)||`<span style="color:${c.muted}">${t("noStatus")}</span>`}</div><div><div class="text-xs font-bold mb-2" style="color:${c.purple}">💉 ${t("nonmed")}</div>${badge(d.bukanUbat.status)||`<span style="color:${c.muted}">${t("noStatus")}</span>`}</div><div><div class="text-xs font-bold" style="color:${c.green}">🛒 ${t("carts")}</div><div class="font-extrabold text-lg" style="color:${c.green}">${d.jumlahTroli||0}</div></div><div><div class="text-xs font-bold" style="color:${c.red}">🚚 ${t("need")}</div><div class="font-extrabold text-lg">${d.perluTroli==="✓"?`<span class="tick">✓</span>`:`<span class="cross">×</span>`}</div></div></div>`}).join(""):`<div class="text-center py-16" style="color:${c.muted}">${t("noData")}</div>`;
+ let c=colors(),items=Object.entries(state.units).sort(([a],[b])=>a.localeCompare(b,undefined,{numeric:true})),total=items.length;
+ let count=s=>items.filter(([,u])=>u.drip.status===s||u.bukanUbat.status===s).length;
+ let settings=state.settings?`<section class="rounded-3xl p-6 border slide" style="background:${c.surface};border-color:${c.border}"><div class="flex justify-between mb-4"><h3 class="font-bold text-lg">⚙️ ${t("settings")}</h3><button onclick="toggleSettings()">✕</button></div><label class="text-sm font-semibold">${t("sheet")}</label><textarea id="sheetUrl" rows="3" class="w-full mt-2 rounded-2xl px-4 py-3" style="background:${c.input};color:${c.ink};border-color:${c.border}">${esc(state.sheetUrl)}</textarea><button onclick="saveSettings()" class="w-full mt-4 px-4 py-3 rounded-2xl text-white font-bold bg-blue-500">${t("save")}</button></section>`:"";
+ let rows=items.length?items.map(([u,d])=>{
+  let ready=d.drip.status===READY||d.bukanUbat.status===READY,full=unitName(u),active=state.activeUnit===u;
+  return`<div class="unit-grid rounded-2xl p-3 border ${ready?"ready-card":""}" style="background:${c.bg};border-color:${ready?"#4ade80":c.border}">
+   <div class="unit-data"><div class="flex items-center gap-3"><div class="emoji-icon ${state.theme==="dark"?"dark":""}">🩺</div><div class="unit-title ${active?"active":""}" onclick="toggleUnitInfo(${JSON.stringify(u)})" title="${esc(full)}"><div class="font-bold break-words unit-title-name">${esc(u)}</div><div class="unit-full-name" style="background:${c.header};color:#fff;border-color:${c.accent}">${esc(full)}</div><div class="text-xs mt-1" style="color:${c.muted}">${t("unit")} ${t("unitInden")} · ${t("longName")}</div></div></div></div>
+   <div class="unit-data" style="border-color:${c.accent}"><div class="text-xs font-bold mb-2" style="color:${c.accent}">💧 ${t("drip")}</div>${badge(d.drip.status)||`<span style="color:${c.muted}">${t("noStatus")}</span>`}</div>
+   <div class="unit-data" style="border-color:${c.purple}"><div class="text-xs font-bold mb-2" style="color:${c.purple}">💉 ${t("nonmed")}</div>${badge(d.bukanUbat.status)||`<span style="color:${c.muted}">${t("noStatus")}</span>`}</div>
+   <div class="unit-data" style="border-color:${c.green}"><div class="text-xs font-bold" style="color:${c.green}">🛒 ${t("carts")}</div><div class="font-extrabold text-lg" style="color:${c.green}">${d.jumlahTroli||0}</div></div>
+   <div class="unit-data" style="border-color:${c.red}"><div class="text-xs font-bold" style="color:${c.red}">🚚 ${t("need")}</div><div class="font-extrabold text-lg">${d.perluTroli==="✓"?`<span class="tick">✓</span>`:`<span class="cross">×</span>`}</div></div>
+  </div>`
+ }).join(""):`<div class="text-center py-16" style="color:${c.muted}">${t("noData")}</div>`;
  let stats=[[t("total"),total,"📦","stat-total"],[t("ready"),count(READY),"✅","stat-ready"],[t("processing"),count(PROCESSING),"🕘","stat-processing"],[t("received"),count(RECEIVED),"📥","stat-received"]];
- document.getElementById("app").innerHTML=`<div class="outer-frame"><header class="sticky top-0 z-40 border-b" style="background:${c.header};border-color:${c.border}"><div class="header-inner max-w-7xl mx-auto px-4 sm:px-6 min-h-16 py-2 flex items-center justify-between gap-3"><div class="flex items-center gap-3 shrink-0"><div class="brand-logo w-10 h-10 rounded-2xl flex items-center justify-center text-white font-black bg-gradient-to-br from-blue-400 to-violet-500">UFL</div><div><b class="brand-title text-white block">UFL Inden Monitor</b><div class="brand-subtitle text-xs text-slate-300">${t("tracker")}</div></div></div><div class="header-actions flex gap-2 items-center justify-end"><button onclick="setLanguage()" class="px-3 py-2 rounded-xl bg-white text-slate-900 font-black">${state.lang==="ms"?"EN":"BM"}</button>${notice}<button onclick="toggleSound()" class="px-3 py-2 rounded-xl font-bold ${state.sound?"bg-cyan-300 text-cyan-950":"bg-slate-600 text-white"}">${state.sound?"🔊":"🔇"}<span class="hidden sm:inline"> ${state.sound?t("soundOn"):t("soundOff")}</span></button><button onclick="toggleTheme()" class="px-3 py-2 rounded-xl font-bold" style="background:${c.surface};color:${c.ink}">${state.theme==="light"?"🌙 "+t("dark"):"☀️ "+t("light")}</button><button onclick="toggleSettings()" class="px-3 py-2 rounded-xl text-white font-bold bg-blue-500">⚙️</button></div></div></header><main class="max-w-7xl mx-auto px-4 sm:px-6 py-6"><div class="dashboard flex flex-col gap-6">${settings}<section class="units rounded-3xl p-6 border shadow-sm" style="background:${c.surface};border-color:${c.border}"><div class="flex justify-between items-center mb-5"><h2 class="text-xl font-bold">🏥 ${t("units")}</h2><span class="text-sm" style="color:${c.muted}">${total} ${t("units").toLowerCase()}</span></div><div class="unit-grid unit-header px-5 py-3 mb-3 text-xs font-bold uppercase tracking-wide" style="color:${c.muted}"><div>${t("unit")}</div><div>${t("drip")}</div><div>${t("nonmed")}</div><div>${t("carts")}</div><div>${t("need")}</div></div><div class="space-y-4">${unitRows}</div></section><section class="stats-card rounded-3xl p-6 border shadow-sm slide" style="background:${c.surface};border-color:${c.border}"><h2 class="text-xl font-bold mb-5">📊 ${t("dashboard")}</h2><div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">${stats.map(x=>`<div class="rounded-2xl p-5 border" style="background:${c.bg};border-color:${c.border}"><div class="flex justify-between items-center"><div><div class="text-sm" style="color:${c.muted}">${x[0]}</div><div class="text-3xl font-extrabold mt-1">${x[1]}</div></div><div class="stat-icon ${x[3]}">${x[2]}</div></div></div>`).join("")}</div></section><section class="dashboard-card rounded-3xl p-6 border shadow-sm" style="background:${c.surface};border-color:${c.border}"><div class="title-row flex justify-between gap-4"><div class="min-w-0"><h1 class="dashboard-title text-2xl font-extrabold">${t("dashboard")}</h1><p class="text-sm mt-1" style="color:${c.muted}">${t("last")}: ${state.lastUpdated.toLocaleString()}</p></div><button onclick="fetchData()" class="shrink-0 px-4 py-2 rounded-xl text-white font-bold bg-blue-500">↻ ${state.loading?t("refreshing"):t("refresh")}</button></div></section>${state.error?`<section class="error rounded-3xl p-5 border" style="background:${c.redSoft};border-color:${c.red}"><b>⚠️ ${t("error")}</b><div class="text-sm mt-1">${esc(state.error)}</div></section>`:""}</div></main></div>`;
+ document.body.style.background=c.bg;document.body.style.color=c.ink;
+ document.getElementById("app").innerHTML=`<div class="outer-frame"><header class="sticky top-0 z-40 border-b" style="background:${c.header};border-color:${c.border}"><div class="header-inner max-w-7xl mx-auto px-4 sm:px-6 min-h-16 py-2 flex items-center justify-between gap-3"><div class="flex items-center gap-3 shrink-0"><div class="w-10 h-10 rounded-2xl flex items-center justify-center text-white font-black bg-gradient-to-br from-blue-400 to-violet-500">UFL</div><div><b class="brand-title text-white block">UFL Inden Monitor</b><div class="text-xs text-slate-300">${t("tracker")}</div></div></div><div class="header-actions flex gap-2 items-center"><button onclick="setLanguage()" class="px-3 py-2 rounded-xl bg-white text-slate-900 font-black">${state.lang==="ms"?"EN":"BM"}</button><button onclick="toggleSound()" class="px-3 py-2 rounded-xl font-bold ${state.sound?"bg-cyan-300 text-cyan-950":"bg-slate-600 text-white"}">${state.sound?"🔊":"🔇"}<span class="hidden sm:inline"> ${state.sound?t("soundOn"):t("soundOff")}</span></button><button onclick="toggleTheme()" class="px-3 py-2 rounded-xl font-bold" style="background:${c.surface};color:${c.ink}">${state.theme==="light"?"🌙 "+t("dark"):"☀️ "+t("light")}</button><button onclick="toggleSettings()" class="px-3 py-2 rounded-xl text-white font-bold bg-blue-500">⚙️</button></div></div></header><main class="max-w-7xl mx-auto px-4 sm:px-6 py-6"><div class="flex flex-col gap-6">${settings}<section class="units rounded-3xl p-6 border shadow-sm" style="background:${c.surface};border-color:${c.border}"><div class="flex justify-between items-center mb-5"><h2 class="text-2xl font-extrabold">🏥 ${t("unitInden")}</h2><span class="text-sm" style="color:${c.muted}">${total} ${t("units").toLowerCase()}</span></div><div class="unit-grid unit-header px-3 py-3 mb-3 text-xs font-bold uppercase tracking-wide" style="color:${c.muted}"><div>${t("unit")}</div><div>${t("drip")}</div><div>${t("nonmed")}</div><div>${t("carts")}</div><div>${t("need")}</div></div><div class="space-y-4">${rows}</div></section><section class="stats-card rounded-3xl p-6 border shadow-sm" style="background:${c.surface};border-color:${c.border}"><h2 class="text-xl font-bold mb-5">📊 ${t("dashboard")}</h2><div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">${stats.map(x=>`<div class="rounded-2xl p-5 border" style="background:${c.bg};border-color:${c.border}"><div class="flex justify-between items-center"><div><div class="text-sm" style="color:${c.muted}">${x[0]}</div><div class="text-3xl font-extrabold mt-1">${x[1]}</div></div><div class="stat-icon ${x[3]}">${x[2]}</div></div></div>`).join("")}</div></section><section class="dashboard-card rounded-3xl p-6 border shadow-sm" style="background:${c.surface};border-color:${c.border}"><div class="flex justify-between items-center gap-4"><div><h1 class="dashboard-title text-2xl font-extrabold">${t("dashboard")}</h1><p class="text-sm mt-1" style="color:${c.muted}">${t("last")}: ${state.lastUpdated.toLocaleString()}</p></div><button onclick="fetchData()" class="px-4 py-2 rounded-xl text-white font-bold bg-blue-500">↻ ${state.loading?t("refreshing"):t("refresh")}</button></div></section>${state.error?`<section class="rounded-3xl p-5 border" style="background:${c.redSoft};border-color:${c.red}"><b>⚠️ ${t("error")}</b><div class="text-sm mt-1">${esc(state.error)}</div></section>`:""}</div></main></div>`;
  renderToasts()
 }
-Object.assign(window,{fetchData,toggleTheme,toggleSettings,saveSettings,enableNotifications,toggleSound,setVolume,setChime,setLanguage,dismissToast});
+Object.assign(window,{fetchData,toggleTheme,toggleSettings,saveSettings,toggleSound,setLanguage,dismissToast,toggleUnitInfo});
 render();fetchData();setInterval(fetchData,8000);
 </script>
 </body>
