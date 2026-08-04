@@ -11,6 +11,7 @@
 body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
 .outer-frame{min-height:100vh;border:10px solid #0f172a}
 button,input,textarea{border-width:5px!important}
+input[type=range]{border-width:0!important;accent-color:#2563eb}
 .unit-grid{display:grid;grid-template-columns:1.2fr 1.15fr 1.25fr .85fr .85fr;gap:12px;align-items:center}
 .status{font-weight:900;font-size:.78rem;line-height:1rem;overflow-wrap:anywhere;border:5px solid}
 .ready-card{position:relative;border:5px solid #22c55e!important;transform:translateY(-3px);box-shadow:0 0 0 3px #22c55e33,0 11px 0 #15803d,0 17px 25px #15803d59,0 0 18px #22c55ecc;animation:pulseGreen 2.3s ease-in-out infinite;transition:.25s}
@@ -38,9 +39,18 @@ const LEGACY={"Inden Sedia Diambil":READY,"Inden Sedang Diproses":PROCESSING,"In
 const LIGHT={bg:"#f8fafc",surface:"#fff",ink:"#0f172a",muted:"#64748b",border:"#e2e8f0",accent:"#2563eb",purple:"#7c3aed",green:"#16a34a",red:"#dc2626",redSoft:"#fee2e2",amber:"#d97706",header:"#0f172a",input:"#fff"};
 const DARK={bg:"#0f172a",surface:"#1e293b",ink:"#f1f5f9",muted:"#94a3b8",border:"#334155",accent:"#3b82f6",purple:"#a78bfa",green:"#22c55e",red:"#ef4444",redSoft:"#450a0a",amber:"#f59e0b",header:"#020617",input:"#0f172a"};
 const TXT={
-en:{tracker:"Realtime status tracker",settings:"Settings",dashboard:"Dashboard Status Inden",last:"Last updated",refresh:"Refresh",refreshing:"Refreshing...",total:"Total Unit",ready:"Ready",processing:"Processing",received:"New Received",notifications:"Notifications",live:"Live unit status changes are displayed automatically",current:"Current status",changed:"Status changed",units:"Units",unit:"Unit",drip:"Drip",nonmed:"Bukan Ubat",carts:"Total Carts",need:"Need Cart",sheet:"Google Sheet URL",script:"Script URL",save:"Save & Reload",error:"Error",noData:"No data loaded yet.",noChanges:"No active status changes.",noStatus:"No status",inden:"Inden",enable:"Enable OS notifications",enabled:"OS notifications enabled",blocked:"Notifications blocked in browser settings",soundOn:"Sound on",soundOff:"Sound off"},
-ms:{tracker:"Pengesan status semasa",settings:"Aturan",dashboard:"Papan Pemuka Status Inden",last:"Terakhir kemaskini",refresh:"Muat Semula",refreshing:"Mengemaskini...",total:"Jumlah Unit",ready:"Sedia",processing:"Proses",received:"Baru Diterima",notifications:"Pemberitahuan",live:"Perubahan status Unit dipaparkan secara automatik",current:"Status semasa",changed:"Status berubah",units:"Unit",unit:"Unit",drip:"Drip",nonmed:"Bukan Ubat",carts:"Jumlah Troli",need:"Perlu Troli",sheet:"URL Google Sheet",script:"URL Skrip",save:"Simpan & Muatkan",error:"Ralat",noData:"Tiada data dimuatkan lagi.",noChanges:"Tiada perubahan status aktif.",noStatus:"Tiada status",inden:"Inden",enable:"Aktifkan pemberitahuan OS",enabled:"Pemberitahuan OS aktif",blocked:"Pemberitahuan disekat dalam tetapan pelayar",soundOn:"Bunyi aktif",soundOff:"Bunyi dimatikan"}};
-const state={units:{},previous:{},notifications:[],sheetUrl:localStorage.getItem("ufl-sheet-url")||DEFAULT_SHEET_URL,scriptUrl:localStorage.getItem("ufl-script-url")||"",theme:localStorage.getItem("ufl-theme")||"light",sound:localStorage.getItem("ufl-sound")!=="off",loading:false,error:"",lastUpdated:new Date(),settings:false,ms:false,initialized:false,permission:typeof Notification==="undefined"?"unsupported":Notification.permission};
+en:{tracker:"Realtime status tracker",settings:"Settings",dashboard:"Dashboard Status Inden",last:"Last updated",refresh:"Refresh",refreshing:"Refreshing...",total:"Total Unit",ready:"Ready",processing:"Processing",received:"New Received",notifications:"Notifications",live:"Live unit status changes are displayed automatically",current:"Current status",changed:"Status changed",units:"Units",unit:"Unit",drip:"Drip",nonmed:"Bukan Ubat",carts:"Total Carts",need:"Need Cart",sheet:"Google Sheet URL",script:"Script URL",save:"Save & Reload",error:"Error",noData:"No data loaded yet.",noChanges:"No active status changes.",noStatus:"No status",inden:"Inden",enable:"Enable OS notifications",enabled:"OS notifications enabled",blocked:"Notifications blocked in browser settings",soundOn:"Sound on",soundOff:"Sound off",volume:"Chime volume",testSound:"Test chime"},
+ms:{tracker:"Pengesan status semasa",settings:"Aturan",dashboard:"Papan Pemuka Status Inden",last:"Terakhir kemaskini",refresh:"Muat Semula",refreshing:"Mengemaskini...",total:"Jumlah Unit",ready:"Sedia",processing:"Proses",received:"Baru Diterima",notifications:"Pemberitahuan",live:"Perubahan status Unit dipaparkan secara automatik",current:"Status semasa",changed:"Status berubah",units:"Unit",unit:"Unit",drip:"Drip",nonmed:"Bukan Ubat",carts:"Jumlah Troli",need:"Perlu Troli",sheet:"URL Google Sheet",script:"URL Skrip",save:"Simpan & Muatkan",error:"Ralat",noData:"Tiada data dimuatkan lagi.",noChanges:"Tiada perubahan status aktif.",noStatus:"Tiada status",inden:"Inden",enable:"Aktifkan pemberitahuan OS",enabled:"Pemberitahuan OS aktif",blocked:"Pemberitahuan disekat dalam tetapan pelayar",soundOn:"Bunyi aktif",soundOff:"Bunyi dimatikan",volume:"Tahap bunyi chime",testSound:"Uji chime"}};
+const state={
+ units:{},previous:{},notifications:[],
+ sheetUrl:localStorage.getItem("ufl-sheet-url")||DEFAULT_SHEET_URL,
+ scriptUrl:localStorage.getItem("ufl-script-url")||"",
+ theme:localStorage.getItem("ufl-theme")||"light",
+ sound:localStorage.getItem("ufl-sound")!=="off",
+ volume:Math.max(0,Math.min(100,Number(localStorage.getItem("ufl-volume")??65))),
+ loading:false,error:"",lastUpdated:new Date(),settings:false,ms:false,initialized:false,
+ permission:typeof Notification==="undefined"?"unsupported":Notification.permission
+};
 let audioContext=null;
 const t=k=>TXT[state.ms?"ms":"en"][k],colors=()=>state.theme==="dark"?DARK:LIGHT;
 const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
@@ -55,45 +65,30 @@ function parseCSV(text){const rows=[];let row=[],cell="",quoted=false;for(let i=
 function csvUrl(url){let m=String(url||"").match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);if(!m)return "";try{let p=new URL(url),gid=p.searchParams.get("gid")||"0";return`https://docs.google.com/spreadsheets/d/${m[1]}/export?format=csv&gid=${encodeURIComponent(gid)}`}catch{return""}}
 
 function playNotificationSound(){
- if(!state.sound)return;
+ if(!state.sound||state.volume<=0)return;
  try{
   audioContext=audioContext||new(window.AudioContext||window.webkitAudioContext)();
   if(audioContext.state==="suspended")audioContext.resume();
-  const now=audioContext.currentTime;
-  const notes=[
-   {time:0,freq:523.25,duration:.42},
-   {time:.13,freq:659.25,duration:.42},
-   {time:.26,freq:783.99,duration:.62}
-  ];
-  notes.forEach((note,index)=>{
-   const oscillator=audioContext.createOscillator();
-   const gain=audioContext.createGain();
-   const filter=audioContext.createBiquadFilter();
+  const now=audioContext.currentTime,level=state.volume/100;
+  [{time:0,freq:523.25,duration:.42},{time:.13,freq:659.25,duration:.42},{time:.26,freq:783.99,duration:.62}].forEach((note,index)=>{
+   const oscillator=audioContext.createOscillator(),gain=audioContext.createGain(),filter=audioContext.createBiquadFilter();
    oscillator.type=index===2?"sine":"triangle";
    oscillator.frequency.setValueAtTime(note.freq,now+note.time);
    oscillator.frequency.exponentialRampToValueAtTime(note.freq*1.015,now+note.time+note.duration);
-   filter.type="lowpass";
-   filter.frequency.setValueAtTime(2600,now+note.time);
+   filter.type="lowpass";filter.frequency.setValueAtTime(2600,now+note.time);
    gain.gain.setValueAtTime(.0001,now+note.time);
-   gain.gain.exponentialRampToValueAtTime(index===2?.2:.14,now+note.time+.025);
+   gain.gain.exponentialRampToValueAtTime((index===2?.2:.14)*level,now+note.time+.025);
    gain.gain.exponentialRampToValueAtTime(.0001,now+note.time+note.duration);
-   oscillator.connect(filter);
-   filter.connect(gain);
-   gain.connect(audioContext.destination);
-   oscillator.start(now+note.time);
-   oscillator.stop(now+note.time+note.duration+.03);
+   oscillator.connect(filter);filter.connect(gain);gain.connect(audioContext.destination);
+   oscillator.start(now+note.time);oscillator.stop(now+note.time+note.duration+.03);
   });
  }catch{}
 }
 function toggleSound(){state.sound=!state.sound;localStorage.setItem("ufl-sound",state.sound?"on":"off");if(state.sound)playNotificationSound();render()}
-function notify(unit,category,oldStatus,newStatus){
- playNotificationSound();
- if(state.permission!=="granted")return;
- try{new Notification(`UFL Inden: ${unit}`,{body:`${category==="drip"?"Drip":"Bukan Ubat"}: ${label(oldStatus)} → ${label(newStatus)}`,tag:`ufl-${unit}-${category}`})}catch{}
-}
+function setVolume(value,test=false){state.volume=Math.max(0,Math.min(100,Number(value)||0));localStorage.setItem("ufl-volume",state.volume);const output=document.getElementById("volumeValue");if(output)output.textContent=state.volume+"%";if(test)playNotificationSound()}
+function notify(unit,category,oldStatus,newStatus){playNotificationSound();if(state.permission!=="granted")return;try{new Notification(`UFL Inden: ${unit}`,{body:`${category==="drip"?"Drip":"Bukan Ubat"}: ${label(oldStatus)} → ${label(newStatus)}`,tag:`ufl-${unit}-${category}`})}catch{}}
 function addNotification(unit,category,oldStatus,newStatus,initial=false){
- const key=`${unit}-${category}`;
- state.notifications=state.notifications.filter(n=>n.key!==key);
+ const key=`${unit}-${category}`;state.notifications=state.notifications.filter(n=>n.key!==key);
  if(normalize(newStatus)===HIDDEN)return;
  state.notifications.unshift({key,unit,category,old:oldStatus||"—",now:newStatus,initial,time:new Date().toLocaleTimeString(),timestamp:Date.now()});
  state.notifications=state.notifications.slice(0,30);
@@ -101,33 +96,21 @@ function addNotification(unit,category,oldStatus,newStatus,initial=false){
 }
 async function enableNotifications(){if(typeof Notification==="undefined"){alert("This browser does not support OS notifications.");return}state.permission=await Notification.requestPermission();render()}
 async function fetchData(){
- if(state.loading)return;
- state.loading=true;state.error="";render();
+ if(state.loading)return;state.loading=true;state.error="";render();
  try{
   let result=null;
   if(state.scriptUrl.trim())try{let r=await fetch(state.scriptUrl.trim());if(r.ok){let p=await r.json();result=p.data||p}}catch{}
   if(!result){
    let url=csvUrl(state.sheetUrl);if(!url)throw Error("URL Google Sheet tidak sah.");
    let r=await fetch(url);if(!r.ok)throw Error("Gagal membaca Google Sheet. Pastikan sheet boleh diakses secara umum.");
-   result={};
-   parseCSV(await r.text()).forEach(row=>{
-    let unit=(row[0]||"").trim(),drip=normalize(row[1]),nonmed=normalize(row[2]);
-    if(unit&&unit.toLowerCase()!=="unit"&&(valid.includes(drip)||valid.includes(nonmed)))result[unit]={drip:{status:drip},bukanUbat:{status:nonmed},jumlahTroli:parseInt(row[3],10)||0,perluTroli:normalizeTroli(row[4])}
-   })
+   result={};parseCSV(await r.text()).forEach(row=>{let unit=(row[0]||"").trim(),drip=normalize(row[1]),nonmed=normalize(row[2]);if(unit&&unit.toLowerCase()!=="unit"&&(valid.includes(drip)||valid.includes(nonmed)))result[unit]={drip:{status:drip},bukanUbat:{status:nonmed},jumlahTroli:parseInt(row[3],10)||0,perluTroli:normalizeTroli(row[4])}})
   }
   let current={};
   Object.entries(result||{}).forEach(([unit,data])=>{
-   data.drip=data.drip||{};data.bukanUbat=data.bukanUbat||{};
-   data.drip.status=normalize(data.drip.status);data.bukanUbat.status=normalize(data.bukanUbat.status);data.perluTroli=normalizeTroli(data.perluTroli);
-   ["drip","bukanUbat"].forEach(category=>{
-    let now=data[category].status||HIDDEN,key=`${unit}-${category}`,old=state.previous[key];current[key]=now;
-    if(old!==undefined&&old!==now)addNotification(unit,category,old,now);
-    else if(!state.initialized&&old===undefined&&now!==HIDDEN)addNotification(unit,category,"",now,true)
-   })
+   data.drip=data.drip||{};data.bukanUbat=data.bukanUbat||{};data.drip.status=normalize(data.drip.status);data.bukanUbat.status=normalize(data.bukanUbat.status);data.perluTroli=normalizeTroli(data.perluTroli);
+   ["drip","bukanUbat"].forEach(category=>{let now=data[category].status||HIDDEN,key=`${unit}-${category}`,old=state.previous[key];current[key]=now;if(old!==undefined&&old!==now)addNotification(unit,category,old,now);else if(!state.initialized&&old===undefined&&now!==HIDDEN)addNotification(unit,category,"",now,true)})
   });
-  state.previous=current;
-  state.units=Object.fromEntries(Object.entries(result||{}).filter(([,u])=>!(u.drip?.status===HIDDEN&&u.bukanUbat?.status===HIDDEN)));
-  state.initialized=true;state.lastUpdated=new Date()
+  state.previous=current;state.units=Object.fromEntries(Object.entries(result||{}).filter(([,u])=>!(u.drip?.status===HIDDEN&&u.bukanUbat?.status===HIDDEN)));state.initialized=true;state.lastUpdated=new Date()
  }catch(e){state.error=e.message||"Ralat berlaku semasa memuatkan data."}
  state.loading=false;render()
 }
@@ -144,9 +127,10 @@ function render(){
  const c=colors(),items=Object.entries(state.units).sort(([a],[b])=>String(a).localeCompare(String(b),undefined,{numeric:true,sensitivity:"base"})),total=items.length,count=s=>items.filter(([,u])=>u.drip?.status===s||u.bukanUbat?.status===s).length;
  document.body.style.background=c.bg;document.body.style.color=c.ink;
  const notificationControl=state.permission==="granted"?`<span class="px-3 py-2 rounded-xl bg-green-500 text-white text-xs font-bold">🔔 ${t("enabled")}</span>`:state.permission==="denied"?`<span class="px-3 py-2 rounded-xl bg-red-500 text-white text-xs font-bold">🔕 ${t("blocked")}</span>`:`<button onclick="enableNotifications()" class="px-3 py-2 rounded-xl bg-yellow-400 text-yellow-950 font-bold">🔔 <span class="hidden sm:inline">${t("enable")}</span></button>`;
- document.getElementById("app").innerHTML=`<div class="outer-frame"><header class="sticky top-0 z-40 border-b" style="background:${c.header};border-color:${c.border}"><div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-16 py-2 flex items-center justify-between gap-3"><div class="flex items-center gap-3 min-w-0"><div class="w-10 h-10 rounded-2xl flex items-center justify-center text-white font-black" style="background:linear-gradient(135deg,${c.accent},${c.purple})">UFL</div><div><b class="text-white block">UFL Inden Monitor</b><div class="text-xs text-slate-300">${t("tracker")}</div></div></div><div class="flex gap-2 items-center flex-wrap justify-end">${notificationControl}<button onclick="toggleSound()" class="px-3 py-2 rounded-xl font-bold ${state.sound?"bg-cyan-400 text-cyan-950":"bg-slate-500 text-white"}">${state.sound?"🔊":"🔇"} <span class="hidden sm:inline">${state.sound?t("soundOn"):t("soundOff")}</span></button><button onclick="toggleLanguage()" class="px-3 py-2 rounded-xl bg-emerald-500 text-white font-bold">MS</button><button onclick="toggleTheme()" class="px-3 py-2 rounded-xl font-semibold" style="background:${c.surface};color:${c.ink}">${state.theme==="light"?"🌙":"☀️"} <span class="hidden sm:inline">${state.theme==="light"?"Dark":"Light"}</span></button><button onclick="toggleSettings()" class="px-3 py-2 rounded-xl text-white font-semibold" style="background:${c.accent}">⚙️ <span class="hidden sm:inline">${t("settings")}</span></button></div></div></header><main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6"><div class="dashboard grid lg:grid-cols-12 gap-6"><div class="main lg:col-span-8 space-y-6"><section class="dashboard-card rounded-3xl p-6 border shadow-sm" style="background:${c.surface};border-color:${c.border}"><div class="flex flex-wrap justify-between items-start gap-4"><div><h1 class="text-2xl font-extrabold">${t("dashboard")}</h1><p class="text-sm mt-1" style="color:${c.muted}">${t("last")}: ${state.lastUpdated.toLocaleString()}</p></div><button onclick="fetchData()" class="px-4 py-2 rounded-xl text-white font-semibold" style="background:${c.accent}">↻ ${state.loading?t("refreshing"):t("refresh")}</button></div><div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">${[[t("total"),total,"📦"],[t("ready"),count(READY),"✅"],[t("processing"),count(PROCESSING),"🕘"],[t("received"),count(RECEIVED),"📦"]].map(x=>`<div class="rounded-2xl p-5 border" style="background:${c.bg};border-color:${c.border}"><div class="flex justify-between"><div><div class="text-sm" style="color:${c.muted}">${x[0]}</div><div class="text-3xl font-extrabold mt-1">${x[1]}</div></div><div class="text-2xl">${x[2]}</div></div></div>`).join("")}</div></section><section class="units rounded-3xl p-6 border shadow-sm" style="background:${c.surface};border-color:${c.border}"><div class="flex justify-between items-center mb-5"><h2 class="text-xl font-bold">${t("units")}</h2><span class="text-sm" style="color:${c.muted}">${total} ${t("units").toLowerCase()}</span></div><div class="unit-grid unit-header px-5 py-3 mb-3 text-xs font-bold uppercase tracking-wide" style="color:${c.muted}"><div>${t("unit")}</div><div>${t("drip")}</div><div>${t("nonmed")}</div><div>${t("carts")}</div><div>${t("need")}</div></div><div class="space-y-4">${items.length?items.map(([unit,data])=>{let ready=data.drip?.status===READY||data.bukanUbat?.status===READY;return`<div class="unit-grid rounded-2xl p-4 border ${ready?"ready-card":""}" style="background:${c.bg};border-color:${ready?"#22c55e":c.border}"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-xl flex items-center justify-center text-xl" style="background:${c.accent}">🩺</div><div><div class="font-bold break-words">${esc(unit)}</div><div class="text-xs" style="color:${c.muted}">${t("unit")} ${t("inden")}</div></div></div><div><div class="text-xs font-bold mb-2" style="color:${c.accent}">💧 ${t("drip")}</div>${badge(data.drip?.status)||`<span class="text-sm" style="color:${c.muted}">${t("noStatus")}</span>`}</div><div><div class="text-xs font-bold mb-2" style="color:${c.purple}">💉 ${t("nonmed")}</div>${badge(data.bukanUbat?.status)||`<span class="text-sm" style="color:${c.muted}">${t("noStatus")}</span>`}</div><div><div class="text-xs font-bold" style="color:${c.green}">🛒 ${t("carts")}</div><div class="font-extrabold text-lg" style="color:${c.green}">${data.jumlahTroli||0}</div></div><div><div class="text-xs font-bold" style="color:#800000">${t("need")}</div><div class="font-extrabold text-lg">${normalizeTroli(data.perluTroli)==="✓"?`<span class="tick">✓</span>`:`<span class="cross">X</span>`}</div></div></div>`}).join(""):`<div class="text-center py-16" style="color:${c.muted}">${t("noData")}</div>`}</div></section></div><aside class="side lg:col-span-4 space-y-6">${state.settings?`<section class="settings rounded-3xl p-6 border shadow-sm slide" style="background:${c.surface};border-color:${c.border}"><div class="flex justify-between items-center mb-4"><h3 class="font-bold text-lg">${t("settings")}</h3><button onclick="toggleSettings()">✕</button></div><label class="text-sm font-semibold">${t("sheet")}</label><textarea id="sheetUrl" rows="4" class="w-full mt-2 rounded-2xl px-4 py-3 border" style="background:${c.input};color:${c.ink};border-color:${c.border}">${esc(state.sheetUrl)}</textarea><label class="text-sm font-semibold block mt-4">${t("script")}</label><input id="scriptUrl" value="${esc(state.scriptUrl)}" class="w-full mt-2 rounded-2xl px-4 py-3 border" style="background:${c.input};color:${c.ink};border-color:${c.border}"><button onclick="saveSettings()" class="w-full mt-4 px-4 py-3 rounded-2xl text-white font-semibold" style="background:${c.green}">${t("save")}</button></section>`:""}${renderNotifications(c)}${state.error?`<section class="error rounded-3xl p-5 border" style="background:${c.redSoft};border-color:${c.red}"><b>${t("error")}</b><div class="text-sm mt-1">${esc(state.error)}</div></section>`:""}</aside></div></main></div>`;
+ const settings=state.settings?`<section class="settings rounded-3xl p-6 border shadow-sm slide" style="background:${c.surface};border-color:${c.border}"><div class="flex justify-between items-center mb-4"><h3 class="font-bold text-lg">${t("settings")}</h3><button onclick="toggleSettings()">✕</button></div><label class="text-sm font-semibold">${t("sheet")}</label><textarea id="sheetUrl" rows="4" class="w-full mt-2 rounded-2xl px-4 py-3 border" style="background:${c.input};color:${c.ink};border-color:${c.border}">${esc(state.sheetUrl)}</textarea><label class="text-sm font-semibold block mt-4">${t("script")}</label><input id="scriptUrl" value="${esc(state.scriptUrl)}" class="w-full mt-2 rounded-2xl px-4 py-3 border" style="background:${c.input};color:${c.ink};border-color:${c.border}"><div class="mt-6 p-4 rounded-2xl border" style="background:${c.bg};border-color:${c.border}"><div class="flex justify-between items-center mb-2"><label class="text-sm font-bold">🔊 ${t("volume")}</label><output id="volumeValue" class="font-black text-blue-600">${state.volume}%</output></div><input type="range" min="0" max="100" step="1" value="${state.volume}" oninput="setVolume(this.value)" onchange="setVolume(this.value,true)" class="w-full h-3 cursor-pointer"><div class="flex justify-between text-xs mt-1" style="color:${c.muted}"><span>0%</span><span>100%</span></div><button onclick="setVolume(document.getElementById('volumeRange')?.value||${state.volume},true)" class="w-full mt-3 px-3 py-2 rounded-xl font-bold" style="background:${c.surface};border:2px solid ${c.border}">${t("testSound")}</button></div><button onclick="saveSettings()" class="w-full mt-4 px-4 py-3 rounded-2xl text-white font-semibold" style="background:${c.green}">${t("save")}</button></section>`:"";
+ document.getElementById("app").innerHTML=`<div class="outer-frame"><header class="sticky top-0 z-40 border-b" style="background:${c.header};border-color:${c.border}"><div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-16 py-2 flex items-center justify-between gap-3"><div class="flex items-center gap-3 min-w-0"><div class="w-10 h-10 rounded-2xl flex items-center justify-center text-white font-black" style="background:linear-gradient(135deg,${c.accent},${c.purple})">UFL</div><div><b class="text-white block">UFL Inden Monitor</b><div class="text-xs text-slate-300">${t("tracker")}</div></div></div><div class="flex gap-2 items-center flex-wrap justify-end">${notificationControl}<button onclick="toggleSound()" class="px-3 py-2 rounded-xl font-bold ${state.sound?"bg-cyan-400 text-cyan-950":"bg-slate-500 text-white"}">${state.sound?"🔊":"🔇"} <span class="hidden sm:inline">${state.sound?t("soundOn"):t("soundOff")}</span></button><button onclick="toggleLanguage()" class="px-3 py-2 rounded-xl bg-emerald-500 text-white font-bold">MS</button><button onclick="toggleTheme()" class="px-3 py-2 rounded-xl font-semibold" style="background:${c.surface};color:${c.ink}">${state.theme==="light"?"🌙":"☀️"} <span class="hidden sm:inline">${state.theme==="light"?"Dark":"Light"}</span></button><button onclick="toggleSettings()" class="px-3 py-2 rounded-xl text-white font-semibold" style="background:${c.accent}">⚙️ <span class="hidden sm:inline">${t("settings")}</span></button></div></div></header><main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6"><div class="dashboard grid lg:grid-cols-12 gap-6"><div class="main lg:col-span-8 space-y-6"><section class="dashboard-card rounded-3xl p-6 border shadow-sm" style="background:${c.surface};border-color:${c.border}"><div class="flex flex-wrap justify-between items-start gap-4"><div><h1 class="text-2xl font-extrabold">${t("dashboard")}</h1><p class="text-sm mt-1" style="color:${c.muted}">${t("last")}: ${state.lastUpdated.toLocaleString()}</p></div><button onclick="fetchData()" class="px-4 py-2 rounded-xl text-white font-semibold" style="background:${c.accent}">↻ ${state.loading?t("refreshing"):t("refresh")}</button></div><div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">${[[t("total"),total,"📦"],[t("ready"),count(READY),"✅"],[t("processing"),count(PROCESSING),"🕘"],[t("received"),count(RECEIVED),"📦"]].map(x=>`<div class="rounded-2xl p-5 border" style="background:${c.bg};border-color:${c.border}"><div class="flex justify-between"><div><div class="text-sm" style="color:${c.muted}">${x[0]}</div><div class="text-3xl font-extrabold mt-1">${x[1]}</div></div><div class="text-2xl">${x[2]}</div></div></div>`).join("")}</div></section><section class="units rounded-3xl p-6 border shadow-sm" style="background:${c.surface};border-color:${c.border}"><div class="flex justify-between items-center mb-5"><h2 class="text-xl font-bold">${t("units")}</h2><span class="text-sm" style="color:${c.muted}">${total} ${t("units").toLowerCase()}</span></div><div class="unit-grid unit-header px-5 py-3 mb-3 text-xs font-bold uppercase tracking-wide" style="color:${c.muted}"><div>${t("unit")}</div><div>${t("drip")}</div><div>${t("nonmed")}</div><div>${t("carts")}</div><div>${t("need")}</div></div><div class="space-y-4">${items.length?items.map(([unit,data])=>{let ready=data.drip?.status===READY||data.bukanUbat?.status===READY;return`<div class="unit-grid rounded-2xl p-4 border ${ready?"ready-card":""}" style="background:${c.bg};border-color:${ready?"#22c55e":c.border}"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-xl flex items-center justify-center text-xl" style="background:${c.accent}">🩺</div><div><div class="font-bold break-words">${esc(unit)}</div><div class="text-xs" style="color:${c.muted}">${t("unit")} ${t("inden")}</div></div></div><div><div class="text-xs font-bold mb-2" style="color:${c.accent}">💧 ${t("drip")}</div>${badge(data.drip?.status)||`<span class="text-sm" style="color:${c.muted}">${t("noStatus")}</span>`}</div><div><div class="text-xs font-bold mb-2" style="color:${c.purple}">💉 ${t("nonmed")}</div>${badge(data.bukanUbat?.status)||`<span class="text-sm" style="color:${c.muted}">${t("noStatus")}</span>`}</div><div><div class="text-xs font-bold" style="color:${c.green}">🛒 ${t("carts")}</div><div class="font-extrabold text-lg" style="color:${c.green}">${data.jumlahTroli||0}</div></div><div><div class="text-xs font-bold" style="color:#800000">${t("need")}</div><div class="font-extrabold text-lg">${normalizeTroli(data.perluTroli)==="✓"?`<span class="tick">✓</span>`:`<span class="cross">X</span>`}</div></div></div>`}).join(""):`<div class="text-center py-16" style="color:${c.muted}">${t("noData")}</div>`}</div></section></div><aside class="side lg:col-span-4 space-y-6">${settings}${renderNotifications(c)}${state.error?`<section class="error rounded-3xl p-5 border" style="background:${c.redSoft};border-color:${c.red}"><b>${t("error")}</b><div class="text-sm mt-1">${esc(state.error)}</div></section>`:""}</aside></div></main></div>`;
 }
-window.fetchData=fetchData;window.toggleTheme=toggleTheme;window.toggleLanguage=toggleLanguage;window.toggleSettings=toggleSettings;window.saveSettings=saveSettings;window.enableNotifications=enableNotifications;window.toggleSound=toggleSound;
+window.fetchData=fetchData;window.toggleTheme=toggleTheme;window.toggleLanguage=toggleLanguage;window.toggleSettings=toggleSettings;window.saveSettings=saveSettings;window.enableNotifications=enableNotifications;window.toggleSound=toggleSound;window.setVolume=setVolume;
 render();fetchData();setInterval(fetchData,5000);
 </script>
 </body>
