@@ -47,7 +47,7 @@ button:active{transform:translateY(0)}
 .sound-active{animation:soundPulse 1s ease-in-out infinite}
 @keyframes blinkStatus{0%,100%{opacity:1;transform:scale(1)}50:{opacity:.28;transform:scale(.96);box-shadow:0 0 0 5px #38bdf855}}
 @keyframes blinkCart{0%,100%{opacity:1;transform:scale(1)}50:{opacity:.3;transform:scale(.86);filter:brightness(1.7)}}
-@keyframes neonBreath{0%,100%{border-color:#22c55e;box-shadow:0 0 8px #22c55e,0 0 18px #22c55e,0 0 32px #16a34a,0 9px 0 #166534,0 15px 24px #22c55e30}25:{border-color:#4ade80;box-shadow:0 0 14px #4ade80,0 0 26px #4ade80,0 0 42px #22c55e,0 9px 0 #166534,0 15px 24px #22c55e40}50:{border-color:#86efac;box-shadow:0 0 22px #86efac,0 0 38px #4ade80,0 0 58px #22c55e,0 9px 0 #166534,0 15px 24px #22c55e60}75:{border-color:#4ade80;box-shadow:0 0 14px #4ade80,0 0 26px #4ade80,0 0 42px #22c55e,0 9px 0 #166534,0 15px 24px #22c55e40}}
+@keyframes neonBreath{0%,100%{border-color:#22c55e;box-shadow:0 0 8px #22c55e,0 0 18px #22c55e,0 0 32px #16a34a,0 9px 0 #166534,0 15px 24px #22c55e30}25:{border-color:#4ade80;box-shadow:0 0 14px #4ade80,0 0 26px #4ade80,0 0 42px #22c55e,0 9px 0 #166534,0 15px 24px #22c55e40}50:{border-color:#86efac;box-shadow:0 0 22px #86efac,0 0 38px #4ade80,0 0 58px #22c55e,0 9px 0 #166534,0 15px 24px #22c55e60}75:{border-color:#4ade80;box-shadow:0 0 14px #4ade80,0 0 26px #4ade80,0 0 42px #22c55e,0 15px 24px #22c55e40}}
 @keyframes toastIn{from{transform:translateX(35px);opacity:0}to:{transform:translateX(0);opacity:1}}
 @keyframes soundPulse{50:{box-shadow:0 0 0 5px #22d3ee55}}
 @media(max-width:1279px){.unit-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.unit-header{display:none}.unit-grid:not(.unit-header)>:first-child{grid-column:1/-1}}
@@ -80,10 +80,56 @@ const normalizeStatus=v=>LEGACY[norm(v)]||norm(v);
 const colors=()=>state.theme==="dark"?{bg:"#0f172a",surface:"#1e2937",ink:"#ffffff",muted:"#e2e8f0",border:"#475569",accent:"#60a5fa",purple:"#c4b5fd",green:"#4ade80",red:"#fb7185",redSoft:"#451a24",amber:"#fbbf24",input:"#1e2937",header:"#020617"}:{bg:"#f8fafc",surface:"#fff",ink:"#0f172a",muted:"#64748b",border:"#e2e8f0",accent:"#2563eb",purple:"#7c3aed",green:"#16a34a",red:"#dc2626",redSoft:"#fee2e2",amber:"#d97706",input:"#fff",header:"#111827"};
 const label=s=>state.lang==="en"?(s===READY?"Ready":s===PROCESSING?"Processing":s===RECEIVED?"Newly Received":"Not Yet Received"):(s===READY?"Sedia":s===PROCESSING?"Proses":s===RECEIVED?"Baru Diterima":"Belum Diterima");
 const statusColor=s=>{let c=colors();return s===READY?c.green:s===PROCESSING?c.amber:s===RECEIVED?c.accent:c.muted};
-const voiceTarget=()=>state.lang==="ms"?{lang:"ms-MY",pattern:/(Bahasa Melayu|Melayu|Malay|ms[-_]?MY)/i,default:"Google Bahasa Melayu"}:{lang:"en-GB",pattern:/en[-_]?GB|english.*uk|uk.*english/i,default:"Google UK English"};
+const voiceTarget=()=>state.lang==="ms"?{lang:"ms-MY",pattern:/(Bahasa Melayu|Melayu|Malay|ms[-_]?MY|malay)/i,default:"Google Bahasa Melayu"}:{lang:"en-GB",pattern:/en[-_]?GB|english.*uk|uk.*english/i,default:"Google UK English"};
 const voices=()=>window.speechSynthesis?window.speechSynthesis.getVoices():[];
-function preferredVoice(){const target=voiceTarget(),saved=localStorage.getItem("ufl-tts-voice-"+state.lang);return voices().find(v=>v.name===saved)||voices().find(v=>target.pattern.test(v.lang+" "+v.name))||null}
-function speakText(text){if(!text)return alert(t("speakEmpty"));if(!speechSynthesis)return; speechSynthesis.cancel();let u=new SpeechSynthesisUtterance(text),v=preferredVoice();u.lang=voiceTarget().lang;u.rate=.9;if(v)u.voice=v;u.onstart=()=>document.querySelectorAll(".speak-button").forEach(x=>x.classList.add("speaking"));u.onend=u.onerror=()=>document.querySelectorAll(".speak-button").forEach(x=>x.classList.remove("speaking"));speechSynthesis.speak(u)}
+function preferredVoice(){
+  const target=voiceTarget();
+  const saved=localStorage.getItem("ufl-tts-voice-"+state.lang);
+  let allVoices=voices();
+  if(saved){
+    let savedVoice=allVoices.find(v=>v.name===saved);
+    if(savedVoice) return savedVoice;
+  }
+  if(state.lang==="ms"){
+    let msVoice=allVoices.find(v=>v.lang.toLowerCase()==="ms-my"||v.lang.toLowerCase()==="ms");
+    if(msVoice) return msVoice;
+    let patternVoice=allVoices.find(v=>{
+      let combined=(v.lang+" "+v.name).toLowerCase();
+      return target.pattern.test(combined) || 
+             v.lang.toLowerCase().startsWith("ms") ||
+             /melayu|malay|bahasa melayu/.test(combined);
+    });
+    if(patternVoice) return patternVoice;
+    let fallback=allVoices.find(v=>/malay|ms/i.test(v.name+v.lang));
+    if(fallback) return fallback;
+  }else{
+    let enVoice=allVoices.find(v=>target.pattern.test(v.lang+" "+v.name));
+    if(enVoice) return enVoice;
+  }
+  return null;
+}
+function speakText(text){
+  if(!text)return alert(t("speakEmpty"));
+  if(!window.speechSynthesis)return;
+  speechSynthesis.cancel();
+  let u=new SpeechSynthesisUtterance(text);
+  let v=preferredVoice();
+  u.lang=voiceTarget().lang;
+  u.rate=0.95;
+  u.pitch=1.0;
+  if(v){u.voice=v;}
+  u.onstart=()=>document.querySelectorAll(".speak-button").forEach(x=>x.classList.add("speaking"));
+  u.onend=u.onerror=()=>document.querySelectorAll(".speak-button").forEach(x=>x.classList.remove("speaking"));
+  if(voices().length===0){
+    window.speechSynthesis.onvoiceschanged=()=>{
+      let newVoice=preferredVoice();
+      if(newVoice) u.voice=newVoice;
+      speechSynthesis.speak(u);
+    };
+  }else{
+    speechSynthesis.speak(u);
+  }
+}
 function speakUnit(u){let d=state.units[u];if(!d)return;let name=(state.lang==='en'?(NE[String(u).trim().toUpperCase()]||unitName(u)):unitName(u));speakText(`${t("statusPrefix")} ${name}. ${t("drip")}: ${label(d.drip)}. ${t("nonmed")}: ${label(d.nonmed)}. ${t("carts")}: ${d.carts}. ${t("need")}: ${d.need?(state.lang==='en'?'Yes':'Ya'):(state.lang==='en'?'No':'Tidak')}`)}
 function speakTest(){let e=document.getElementById("testText");state.testText=e?.value||state.testText;localStorage.setItem("ufl-tts-test-ms",state.testText);speakText(state.testText)}
 function tone(f,s,d,end=f){if(!audioContext)return;let o=audioContext.createOscillator(),g=audioContext.createGain(),n=audioContext.currentTime+s;o.frequency.setValueAtTime(f,n);o.frequency.linearRampToValueAtTime(end,n+d);g.gain.setValueAtTime(.001,n);g.gain.exponentialRampToValueAtTime(.14,n+.02);g.gain.exponentialRampToValueAtTime(.001,n+d);o.connect(g);g.connect(audioContext.destination);o.start(n);o.stop(n+d+.03)}
@@ -93,7 +139,13 @@ function stopSoundLoop(){if(!soundLoopInterval)return;clearInterval(soundLoopInt
 function toggleSound(){state.sound=!state.sound;localStorage.setItem("ufl-sound",state.sound?"on":"off");if(!state.sound)stopSoundLoop();render()}
 function toggleLoopSound(){state.loopSound=!state.loopSound;localStorage.setItem("ufl-loop-sound",state.loopSound);if(!state.loopSound)stopSoundLoop();render()}
 function dismissToast(id){state.toasts=state.toasts.filter(x=>x.id!==id);renderToasts()}
-function toast(u,a,b){state.toasts.unshift({id:Date.now(),u,a,b});state.toasts=state.toasts.slice(0,5);renderToasts()}
+function toast(u,a,b){
+  const id=Date.now();
+  state.toasts.unshift({id,u,a,b});
+  state.toasts=state.toasts.slice(0,5);
+  renderToasts();
+  setTimeout(()=>dismissToast(id), 5000);
+}
 function badge(s){let c=colors();let textColor="#fff";if(s===READY)textColor="#052e16";else if(s===HIDDEN)textColor=state.theme==="dark"?"#0f172a":"#334155";return `<span class="status ${s!==HIDDEN?"current-status":""}" style="color:${textColor};background:${s===READY?"#bbf7d0":statusColor(s)};border-color:${s===READY?"#86efac":statusColor(s)}">${s===READY?"✅ ":""}${esc(label(s))}</span>`}
 function renderToasts(){let c=colors();document.getElementById("toastContainer").innerHTML=state.toasts.map(x=>`<div class="toast rounded-2xl p-4 ${state.sound?"sound-active":""}" style="background:${c.surface};color:${c.ink}"><div class="flex justify-between"><b>🔔 ${esc(unitName(x.u))}</b><button onclick="dismissToast(${x.id})">×</button></div><div class="flex items-center justify-center gap-1 mt-3">${badge(x.a)}<b>→</b>${badge(x.b)}</div></div>`).join("");if(state.toasts.length&&state.sound){if(state.loopSound){startSoundLoop()}else{playSound()}}else{stopSoundLoop()}}
 function csvUrl(url){let m=String(url).match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);if(!m)return"";try{let p=new URL(url);return`https://docs.google.com/spreadsheets/d/${m[1]}/export?format=csv&gid=${p.searchParams.get("gid")||0}`}catch{return""}}
@@ -163,7 +215,6 @@ function testNativeNotification() {
     alert(state.lang==="ms"?"Pelayar tidak menyokong notifikasi sistem.":"Browser does not support system notifications.");
     return;
   }
-  
   if (Notification.permission === "granted") {
     showNativeNotification("Ujian Notifikasi", {
       body: state.lang==="ms"?"Ini adalah notifikasi ujian dari UFL Monitor.":"This is a test notification from UFL Monitor.",
@@ -186,7 +237,7 @@ function testNativeNotification() {
 }
 function render(){
  updateFontScale();
- let c=colors(),all=Object.entries(state.units).sort(([a,x],[b,y])=>(y.drip===READY||y.nonmed===READY)-(x.drip===READY||x.nonmed===READY)||a.localeCompare(b)),q=state.search.toLowerCase(),items=all.filter(([u])=>u.toLowerCase().includes(q)||unitName(u).toLowerCase().includes(q)),count=s=>all.filter(([,d])=>d.drip===s||d.nonmed===s).length,target=voiceTarget(),vs=voices().filter(v=>target.pattern.test(v.lang+" "+v.name));
+ let c=colors(),all=Object.entries(state.units).sort(([a,x],[b,y])=>(y.drip===READY||y.nonmed===READY)-(x.drip===READY||x.nonmed===READY)||a.localeCompare(b)),q=state.search.toLowerCase(),items=all.filter(([u])=>u.toLowerCase().includes(q)||unitName(u).toLowerCase().includes(q)),count=s=>all.filter(([,d])=>d.drip===s||d.nonmed===s).length,target=voiceTarget(),vs=voices().filter(v=>target.pattern.test(v.lang+" "+v.name)||v.lang.toLowerCase().startsWith("ms"));
  let settings=state.settings?`<section class="rounded-3xl p-6 border mb-6" style="background:${c.surface};border-color:${c.border}"><div class="flex justify-between mb-4"><h3 class="font-bold text-lg" style="color:${c.ink}">⚙️ ${t("settings")}</h3><button onclick="toggleSettings()">✕</button></div><label class="text-sm font-semibold">${t("sheet")}</label><textarea id="sheetUrl" rows="3" class="w-full mt-2 rounded-2xl px-4 py-3" style="background:${c.input};color:${c.ink};border-color:${c.border}">${esc(state.sheetUrl)}</textarea><div class="mt-5 rounded-2xl border p-4" style="border-color:${c.border}"><div class="flex items-center justify-between"><b>🔊 ${t("sound")}</b><button onclick="toggleSound()" class="px-4 py-2 rounded-xl font-bold ${state.sound?"bg-cyan-300 text-cyan-950":"bg-slate-600 text-white"}">${state.sound?t("on"):t("off")}</button></div><div class="grid sm:grid-cols-2 gap-3 mt-4"><select onchange="state.soundType=this.value;localStorage.setItem('ufl-sound-type',this.value)" class="rounded-xl px-3 py-2" style="background:${c.input};color:${c.ink};border-color:${c.border}"><option value="chime" ${state.soundType==="chime"?"selected":""}>Chime</option><option value="doorbell" ${state.soundType==="doorbell"?"selected":""}>Doorbell</option><option value="whistle" ${state.soundType==="whistle"?"selected":""}>Whistle</option><option value="ring" ${state.soundType==="ring"?"selected":""}>Ring</option></select><button onclick="playSound()" class="rounded-xl bg-violet-500 text-white font-bold">▶ ${t("test")}</button></div><div class="mt-3"><label class="flex items-center gap-2"><input type="checkbox" ${state.loopSound?"checked":""} onchange="toggleLoopSound()" class="rounded"><span>${t("loopSound")}</span></label><p class="text-xs mt-1" style="color:${c.muted}">${t("loopSoundDesc")}</p></div></div><div class="mt-5 rounded-2xl border p-4" style="border-color:${c.border}"><div class="flex items-center justify-between"><b>🖥️ ${t("nativeNotif")}</b><button onclick="toggleNotifications()" class="px-4 py-2 rounded-xl font-bold ${state.notifications?"bg-green-500 text-white":"bg-slate-600 text-white"}">${state.notifications?t("on"):t("off")}</button></div><p class="text-xs mt-2" style="color:${c.muted}">${t("nativeNotifDesc")}</p><button onclick="testNativeNotification()" class="w-full mt-3 rounded-xl bg-amber-500 text-white font-bold px-4 py-2">🔔 ${t("test")} ${t("nativeNotif")}</button></div><div class="mt-5 rounded-2xl border p-4" style="border-color:${c.border}"><b>🔈 ${t("voice")}</b><select onchange="localStorage.setItem('ufl-tts-voice-'+state.lang,this.value)" class="w-full mt-3 rounded-xl px-3 py-2" style="background:${c.input};color:${c.ink};border-color:${c.border}"><option value="">${target.default}</option>${vs.map(v=>`<option value="${esc(v.name)}">${esc(v.name)} (${v.lang})</option>`).join("")}</select><label class="block text-sm font-semibold mt-4">${t("testText")}<input id="testText" value="${esc(state.testText)}" placeholder="${t("testPlaceholder")}" class="w-full mt-2 rounded-xl px-3 py-2" style="background:${c.input};color:${c.ink};border-color:${c.border}"></label><button onclick="speakTest()" class="w-full mt-3 rounded-xl bg-emerald-500 text-white font-bold px-4 py-3">🔊 ${t("testVoice")}</button></div><button onclick="saveSettings()" class="w-full mt-5 px-4 py-3 rounded-2xl text-white font-bold bg-blue-500">${t("save")}</button></section>`:"";
  let readyText = state.lang === "ms" ? "✓ SEDIA" : "✓ READY";
  let rows=items.length?items.map(([u,d])=>{let ready=d.drip===READY||d.nonmed===READY,key=esc(u).replace(/'/g,"&#039;");return`<div class="unit-grid rounded-2xl p-3 border ${ready?"ready-card":""}" ${ready ? `data-ready-text="${readyText}"` : ''} style="background:${c.bg};border-color:${ready?"#22c55e":c.border}"><div class="unit-data"><div class="flex items-center gap-3">${unitBadge(u)}<div class="unit-title"><div class="font-bold unit-title-name">${esc(unitName(u))}</div><div class="unit-full-name" style="background:${c.header};color:#fff">${esc(unitName(u))}</div><div class="text-xs mt-1" style="color:${c.muted}">${esc(u)} · ${t("unit")}</div></div><button class="speak-button" onclick="speakUnit('${key}')">🔊</button></div></div><div class="unit-data text-center" style="border-color:${c.accent}"><div class="column-label mb-2" style="color:${c.accent}">💧 ${t("drip")}</div>${badge(d.drip)}</div><div class="unit-data text-center" style="border-color:${c.purple}"><div class="column-label mb-2" style="color:${c.purple}">💉 ${t("nonmed")}</div>${badge(d.nonmed)}</div><div class="unit-data text-center" style="border-color:${c.green}"><div class="column-label" style="color:${c.green}">🛒 ${t("carts")}</div><div class="cart-number" style="color:${c.green}">${d.carts}</div></div><div class="unit-data text-center" style="border-color:${c.red}"><div class="column-label" style="color:${c.red}">🚚 ${t("need")}</div><div class="cart-status ${d.need?"blink-cart text-green-500":"text-rose-500"}">${d.need?"✓":"×"}</div></div></div>`}).join(""):`<div class="text-center py-16" style="color:${c.muted}">${t("noData")}</div>`;
